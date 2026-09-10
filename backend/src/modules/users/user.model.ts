@@ -18,7 +18,7 @@ import {
 } from "./user.types.js";
 
 import { Role } from "../roles/role.model.js";
-// import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
+import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
 
 @Table({
   tableName: "users",
@@ -73,6 +73,6 @@ export class User
   @Column(DataType.DATE)
   declare lastLoginAt: Date | null;
 
-  // @BelongsToMany(() => Role, () => UserBuildingRole)
-  // declare roles: Role[];
+  @BelongsToMany(() => Role, () => UserBuildingRole)
+  declare roles: Role[];
 }

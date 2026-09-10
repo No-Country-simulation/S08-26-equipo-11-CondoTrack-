@@ -1,6 +1,6 @@
 export interface UserBuildingRoleAttributes {
   userId: number;
-  buildingId: number;
+  buildingId: string;
   roleId: number;
   createdAt?: Date;
   updatedAt?: Date;

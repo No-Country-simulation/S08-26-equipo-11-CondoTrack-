@@ -15,7 +15,7 @@ import {
 
 import { User } from "../users/user.model.js";
 import { Role } from "../roles/role.model.js";
-// import { Building } from "../buildings/building.model.js";
+import { Building } from "../buildings/building.model.js";
 
 @Table({
   tableName: "users_buildings_roles",
@@ -32,10 +32,10 @@ export class UserBuildingRole extends Model<UserBuildingRoleAttributes> {
   @Column(DataType.INTEGER)
   declare roleId: number;
 
-  // @PrimaryKey
-  // @ForeignKey(() => Building)
-  // @Column(DataType.INTEGER)
-  // declare buildingId: number;
+  @PrimaryKey
+  @ForeignKey(() => Building)
+  @Column(DataType.UUID)
+  declare buildingId: string;
 
   @BelongsTo(() => User)
   declare user: User;
@@ -43,6 +43,6 @@ export class UserBuildingRole extends Model<UserBuildingRoleAttributes> {
   @BelongsTo(() => Role)
   declare role: Role;
 
-  // @BelongsTo(() => Building)
-  // declare building: Building;
+  @BelongsTo(() => Building)
+  declare building: Building;
 }

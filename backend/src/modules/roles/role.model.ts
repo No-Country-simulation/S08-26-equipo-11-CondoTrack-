@@ -12,7 +12,7 @@ import {
 
 import { RoleAttributes, RoleCreationAttributes } from "./role.types.js";
 import { User } from "../users/user.model.js";
-// import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
+import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
 
 @Table({
   tableName: "roles",
@@ -36,6 +36,6 @@ export class Role
   @Column(DataType.STRING(255))
   declare description: string | null;
 
-  // @BelongsToMany(() => User, () => UserBuildingRole)
-  // declare users: User[];
+  @BelongsToMany(() => User, () => UserBuildingRole)
+  declare users: User[];
 }
