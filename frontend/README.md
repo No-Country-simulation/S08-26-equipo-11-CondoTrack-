@@ -1,45 +1,70 @@
-## Stack tecnologico del frontend
+# Frontend — CondoTrack
 
+## Stack tecnológico
 
-- React
-- Vite
-- JavaScript
-- Bootstrap
-- React Router
-- pnpm ( empaquetador de dependencias)
+- **React** — Biblioteca para la construcción de interfaces de usuario.
+- **Vite** — Herramienta de desarrollo y build.
+- **JavaScript** — Lenguaje principal del proyecto.
+- **Bootstrap** — Framework de estilos y componentes UI.
+- **React Router** — Gestión de rutas y navegación.
+- **pnpm** — Gestor de paquetes y dependencias.
 
+## Configuración del proyecto
 
-# Configuración del proyecto
+### 1. Clonar el repositorio
 
-1. Clonar el repositorio
-
-```shell
+```bash
 git clone https://github.com/s08-26-equipo-11/CondoTrack.git
 ```
 
-2. Ingresar al directorio del frontend
+### 2. Ingresar al directorio del frontend
 
-```shell
-cd frontend
+```bash
+cd CondoTrack/frontend
 ```
-3. Copiar el archivo `.env.example` y renombrarlo a `.env` para configurar las variables de entorno necesarias.
-```shell
+
+### 3. Configurar las variables de entorno
+
+Copia el archivo `.env.example` y crea el archivo `.env`:
+
+```bash
 cp .env.example .env
 ```
-3. Instalar dependencias
 
-```shell
+Configura en `.env` las variables de entorno necesarias para ejecutar el proyecto.
+
+> Importante: el archivo `.env` no debe subirse al repositorio.
+
+### 4. Instalar las dependencias
+
+```bash
 pnpm install
 ```
 
-4. Comandos disponibles
+### 5. Ejecutar el proyecto en desarrollo
 
-```shell
+```bash
 pnpm run dev
 ```
-```shell
+
+### 6. Generar el build de producción
+
+```bash
 pnpm run build
 ```
-```shell
+
+### 7. Previsualizar el build de producción
+
+```bash
 pnpm run preview
 ```
+
+## Comandos disponibles
+
+| Comando | Descripción |
+| --- | --- |
+| `pnpm run dev` | Inicia el servidor de desarrollo |
+| `pnpm run build` | Genera el build para producción |
+| `pnpm run preview` | Previsualiza el build de producción |
+
+**Nota:** este contenido debe quedar en un único archivo `README.md` y estar correctamente formateado en Markdown.
