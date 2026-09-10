@@ -1,11 +1,21 @@
-import { Sequelize } from "sequelize";
+import { Sequelize } from "sequelize-typescript";
 import { config } from "./env.js";
+
+import { User } from "../modules/users/user.model.js";
+import { Role } from "../modules/roles/role.model.js";
+// import { UserBuildingRole } from "../modules/users-building-roles/user-building-role.model.js";
 
 const isProduction = config.nodeEnv === "production";
 
-const sequelize = new Sequelize(config.databaseUrl, {
+export const sequelize = new Sequelize(config.databaseUrl, {
   dialect: "postgres",
   protocol: "postgres",
+  
+  models: [
+    User,
+    Role,
+    // UserBuildingRole,
+  ],
 
   //config de los logs de la db
   logging: isProduction
@@ -23,7 +33,7 @@ const sequelize = new Sequelize(config.databaseUrl, {
 export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
   await sequelize.authenticate();
+  await sequelize.sync();
   console.log("[Database] ✅ Conexion establecida");
 }
 
-export default sequelize;
