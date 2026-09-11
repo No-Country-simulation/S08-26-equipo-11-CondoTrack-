@@ -5,6 +5,7 @@ import {
   DataType,
   PrimaryKey,
   AutoIncrement,
+  Default,
   AllowNull,
   Unique,
   BelongsToMany,
@@ -23,9 +24,9 @@ export class Role
   implements RoleAttributes
 {
   @PrimaryKey
-  @AutoIncrement
-  @Column(DataType.INTEGER)
-  declare id: number;
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
+  declare id: string;
 
   @AllowNull(false)
   @Unique
@@ -35,7 +36,4 @@ export class Role
   @AllowNull(true)
   @Column(DataType.STRING(255))
   declare description: string | null;
-
-  @BelongsToMany(() => User, () => UserBuildingRole)
-  declare users: User[];
 }

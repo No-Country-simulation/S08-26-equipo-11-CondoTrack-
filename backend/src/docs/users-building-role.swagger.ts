@@ -14,9 +14,10 @@
  *           description: Identificador del usuario
  *           example: 1
  *         buildingId:
- *           type: integer
- *           description: Identificador del edificio
- *           example: 1
+ *           type: string
+ *           format: uuid
+ *           description: Identificador único del edificio
+ *           example: "550e8400-e29b-41d4-a716-446655440000"
  *         roleId:
  *           type: integer
  *           description: Identificador del rol

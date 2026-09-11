@@ -3,6 +3,7 @@ import {
   Column,
   Model,
   DataType,
+  Default,
   ForeignKey,
   BelongsTo,
   PrimaryKey,
@@ -23,9 +24,9 @@ import { Building } from "../buildings/building.model.js";
 })
 export class UserBuildingRole extends Model<UserBuildingRoleAttributes> {
   @PrimaryKey
-  @ForeignKey(() => User)
-  @Column(DataType.INTEGER)
-  declare userId: number;
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
+  declare id: string;
 
   @PrimaryKey
   @ForeignKey(() => Role)
@@ -36,13 +37,4 @@ export class UserBuildingRole extends Model<UserBuildingRoleAttributes> {
   @ForeignKey(() => Building)
   @Column(DataType.UUID)
   declare buildingId: string;
-
-  @BelongsTo(() => User)
-  declare user: User;
-
-  @BelongsTo(() => Role)
-  declare role: Role;
-
-  @BelongsTo(() => Building)
-  declare building: Building;
 }

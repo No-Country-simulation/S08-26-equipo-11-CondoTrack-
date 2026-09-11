@@ -5,6 +5,7 @@ import {
   DataType,
   PrimaryKey,
   AutoIncrement,
+  Default,
   AllowNull,
   Unique,
   Default,
@@ -30,9 +31,9 @@ export class User
   implements UserAttributes
 {
   @PrimaryKey
-  @AutoIncrement
-  @Column(DataType.INTEGER)
-  declare id: number;
+  @Default(DataType.UUIDV4)
+  @Column(DataType.UUID)
+  declare id: string;
 
   @AllowNull(false)
   @Column(DataType.STRING(100))
@@ -72,7 +73,4 @@ export class User
   @AllowNull(true)
   @Column(DataType.DATE)
   declare lastLoginAt: Date | null;
-
-  @BelongsToMany(() => Role, () => UserBuildingRole)
-  declare roles: Role[];
 }
