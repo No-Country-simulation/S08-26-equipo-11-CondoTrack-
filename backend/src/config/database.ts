@@ -11,13 +11,8 @@ const isProduction = config.nodeEnv === "production";
 export const sequelize = new Sequelize(config.databaseUrl, {
   dialect: "postgres",
   protocol: "postgres",
-  
-  models: [
-    User,
-    Role,
-    Building,
-    UserBuildingRole,
-  ],
+
+  models: [User, Role, Building, UserBuildingRole],
 
   //config de los logs de la db
   logging: isProduction
@@ -35,7 +30,6 @@ export const sequelize = new Sequelize(config.databaseUrl, {
 export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
   await sequelize.authenticate();
-  await sequelize.sync();
+  // await sequelize.sync();
   console.log("[Database] ✅ Conexion establecida");
 }
-
