@@ -1,0 +1,38 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "CondoTrack API",
+    "version": "1.0.0",
+    "description": "API para la gestión de edificios y condominios"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "503": {
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  }
+}
