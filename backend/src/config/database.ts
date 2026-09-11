@@ -4,7 +4,7 @@ import { config } from "./env.js";
 import { User } from "../modules/users/user.model.js";
 import { Role } from "../modules/roles/role.model.js";
 import { Building } from "../modules/buildings/building.model.js";
-import { UserBuildingRole } from "../modules/users-building-roles/user-building-role.model.js";
+import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
 
 const isProduction = config.nodeEnv === "production";
 
