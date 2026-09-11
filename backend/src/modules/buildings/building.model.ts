@@ -40,7 +40,7 @@ export class Building extends Model<Building> {
 
   @AllowNull(true)
   @Column(DataType.STRING(20))
-  zip_code!: string | null; //porque puede ser null si el edificio no tiene codigo postal
+  zipCode!: string | null; //porque puede ser null si el edificio no tiene codigo postal
 
   @AllowNull(true)
   @Column(DataType.TEXT)
@@ -49,11 +49,11 @@ export class Building extends Model<Building> {
   @AllowNull(false)
   @Default(true)
   @Column(DataType.BOOLEAN)
-  is_active!: boolean; //el edifcio puede ser activo o inactivo, sin borrarlo de DB
+  isActive!: boolean; //el edifcio puede ser activo o inactivo, sin borrarlo de DB
 
   @CreatedAt
-  created_at!: Date;
+  createdAt!: Date;
 
   @UpdatedAt
-  updated_at!: Date;
+  updatedAt!: Date;
 }

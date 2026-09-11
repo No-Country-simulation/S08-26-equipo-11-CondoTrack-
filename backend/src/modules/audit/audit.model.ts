@@ -35,7 +35,7 @@ export class AuditLog extends Model<AuditLog> {
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  user_id!: string | null; //solo campo sin relacion Sequelize
+  performedBy!: string | null; //solo campo sin relacion Sequelize
 
   @AllowNull(false)
   @Column(DataType.STRING(50))
@@ -43,24 +43,24 @@ export class AuditLog extends Model<AuditLog> {
 
   @AllowNull(false)
   @Column(DataType.STRING(50))
-  table_name!: string;
+  tableName!: string;
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  record_id!: string | null;
+  recordId!: string | null;
 
   @AllowNull(true)
   @Column(DataType.JSONB)
-  old_values!: Record<string, unknown> | null;
+  oldValues!: Record<string, unknown> | null;
 
   @AllowNull(true)
   @Column(DataType.JSONB)
-  new_values!: Record<string, unknown> | null;
+  newValues!: Record<string, unknown> | null;
 
   @AllowNull(true)
   @Column(DataType.INET)
-  ip_address!: string | null;
+  ipAddress!: string | null;
 
   @CreatedAt
-  created_at!: Date;
+  createdAt!: Date;
 }

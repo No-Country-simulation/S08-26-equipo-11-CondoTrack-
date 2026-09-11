@@ -30,11 +30,11 @@ export class Unit extends Model<Unit> {
 
   @AllowNull(false)
   @Column(DataType.UUID)
-  building_id!: string; //solo campo, sin relacion Sequelize
+  buildingId!: string; //solo campo, sin relacion Sequelize
 
   @AllowNull(false)
   @Column(DataType.STRING(20))
-  unit_number!: string; //string porque puede ser 101, 2A, PB, PH, LOCAL-01, TORRE-A-302 etcetc
+  unitNumber!: string; //string porque puede ser 101, 2A, PB, PH, LOCAL-01, TORRE-A-302 etcetc
 
   @AllowNull(true)
   @Column(DataType.INTEGER)
@@ -46,15 +46,15 @@ export class Unit extends Model<Unit> {
 
   @AllowNull(true)
   @Column(DataType.DECIMAL(10, 2))
-  area_m2!: number | null;
+  areaM2!: number | null;
 
   @AllowNull(true)
   @Column(DataType.TEXT)
   description!: string | null;
 
   @CreatedAt
-  created_at!: Date;
+  createdAt!: Date;
 
   @UpdatedAt
-  updated_at!: Date;
+  updatedAt!: Date;
 }
