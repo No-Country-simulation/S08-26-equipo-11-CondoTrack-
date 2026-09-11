@@ -3,10 +3,11 @@ import {
   Column,
   Model,
   DataType,
-  Default,
-  ForeignKey,
-  BelongsTo,
   PrimaryKey,
+  Default,
+  AllowNull,
+  CreatedAt,
+  UpdatedAt,
 } from "sequelize-typescript";
 
 import {
@@ -14,27 +15,35 @@ import {
   UserBuildingRoleCreationAttributes,
 } from "./user-building-role.types.js";
 
-import { User } from "../users/user.model.js";
-import { Role } from "../roles/role.model.js";
-import { Building } from "../buildings/building.model.js";
-
 @Table({
   tableName: "users_buildings_roles",
   timestamps: true,
+  underscored: true,
 })
-export class UserBuildingRole extends Model<UserBuildingRoleAttributes> {
+export class UserBuildingRole extends Model<
+  UserBuildingRoleAttributes,
+  UserBuildingRoleCreationAttributes
+> {
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
   declare id: string;
 
-  @PrimaryKey
-  @ForeignKey(() => Role)
-  @Column(DataType.INTEGER)
-  declare roleId: number;
+  @AllowNull(false)
+  @Column(DataType.UUID)
+  declare userId: string;
 
-  @PrimaryKey
-  @ForeignKey(() => Building)
+  @AllowNull(false)
+  @Column(DataType.UUID)
+  declare roleId: string;
+
+  @AllowNull(false)
   @Column(DataType.UUID)
   declare buildingId: string;
+
+  @CreatedAt
+  declare createdAt: Date;
+
+  @UpdatedAt
+  declare updatedAt: Date;
 }

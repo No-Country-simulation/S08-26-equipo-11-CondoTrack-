@@ -4,20 +4,17 @@ import {
   Model,
   DataType,
   PrimaryKey,
-  AutoIncrement,
   Default,
   AllowNull,
   Unique,
-  BelongsToMany,
 } from "sequelize-typescript";
 
 import { RoleAttributes, RoleCreationAttributes } from "./role.types.js";
-import { User } from "../users/user.model.js";
-import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
 
 @Table({
   tableName: "roles",
   timestamps: true,
+  underscored: true,
 })
 export class Role
   extends Model<RoleAttributes, RoleCreationAttributes>

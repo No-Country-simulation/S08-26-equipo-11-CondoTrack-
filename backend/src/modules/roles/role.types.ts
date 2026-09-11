@@ -1,5 +1,5 @@
 export interface RoleAttributes {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   createdAt?: Date;
