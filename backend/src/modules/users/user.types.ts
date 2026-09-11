@@ -1,7 +1,7 @@
 export type UserStatus = "ACTIVE" | "INACTIVE" | "BLOCKED";
 
 export interface UserAttributes {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   documentType: string;

@@ -4,12 +4,9 @@ import {
   Model,
   DataType,
   PrimaryKey,
-  AutoIncrement,
   Default,
   AllowNull,
   Unique,
-  Default,
-  BelongsToMany,
 } from "sequelize-typescript";
 
 import {
@@ -17,9 +14,6 @@ import {
   UserCreationAttributes,
   UserStatus,
 } from "./user.types.js";
-
-import { Role } from "../roles/role.model.js";
-import { UserBuildingRole } from "../users-building-roles/user-building-role.model.js";
 
 @Table({
   tableName: "users",

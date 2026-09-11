@@ -17,7 +17,7 @@ import {
   underscored: true,
   indexes: [
     {
-      fields: ["user_id"],
+      fields: ["performed_by"],
     },
     {
       fields: ["table_name", "record_id"],
@@ -35,7 +35,15 @@ export class AuditLog extends Model<AuditLog> {
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  performedBy!: string | null; //solo campo sin relacion Sequelize
+  buildingId!: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  unitId!: string | null;
+
+  @AllowNull(true)
+  @Column(DataType.UUID)
+  performedBy!: string | null;
 
   @AllowNull(false)
   @Column(DataType.STRING(50))

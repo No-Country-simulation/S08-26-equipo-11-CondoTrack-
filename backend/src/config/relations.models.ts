@@ -3,7 +3,7 @@ import { Role } from "../modules/roles/role.model.js";
 import { Building } from "../modules/buildings/building.model.js";
 import { Unit } from "../modules/units/unit.model.js";
 
-import { UserBuildingRole } from "../modules/users-building-roles/user-building-role.model.js";
+import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
 
 import { AuditLog } from "../modules/audit/audit.model.js";
 
