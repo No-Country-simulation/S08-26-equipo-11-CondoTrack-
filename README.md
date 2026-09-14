@@ -169,7 +169,7 @@ frontend/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-organizacion/CondoTrack.git
+git clone [https://github.com/tu-organizacion/CondoTrack.git](https://github.com/No-Country-simulation/S08-26-equipo-11-CondoTrack-.git)
 cd CondoTrack
 ```
 
@@ -228,7 +228,8 @@ http://localhost:3000/api-docs
 | Alejandro Camacho | Project Manager / Full Stack Developer |
 | Laura Espindola | Frontend Developer |
 | Valen Flores | Frontend Developer |
-| Justina Multigliengo | Backend Developer |
+| Alejandro Anchundia | Frontend Developer |
+| Justina Mutigliengo | Backend Developer |
 | Marcos Soria | Backend Developer (Manejo de GitHub) |
 | María Grillo | QA Lead / QA Tester |
 
