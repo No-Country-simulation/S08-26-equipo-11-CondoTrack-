@@ -4,6 +4,7 @@ import swaggerUi from "swagger-ui-express";
 
 import { sequelize } from "./config/database.js";
 import { swaggerSpec } from "./config/swagger.js";
+import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
 
@@ -31,5 +32,7 @@ app.get("/health", async (req: Request, res: Response) => {
     services: { database: databaseStatus },
   });
 });
+
+app.use(errorHandler);
 
 export default app;
