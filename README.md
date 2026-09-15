@@ -20,8 +20,6 @@ El backend de **CondoTrack** consiste en una **API REST** desarrollada con Node.
 
 La API utiliza una arquitectura REST y expone diferentes endpoints para permitir la comunicación entre el frontend y el backend.
 
-La documentación de la API se genera mediante **swagger-autogen** y se visualiza a través de Swagger UI.
-
 ## 📁 Estructura
 
 ```text
