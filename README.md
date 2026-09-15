@@ -42,13 +42,12 @@ backend/
 └── tsconfig.json
 ```
 
-## Requisitos
+## 📋 Requisitos
 
 Antes de comenzar, es necesario contar con las siguientes herramientas instaladas:
 
 - **Node.js** — versión 18 o superior
 - **npm** — incluido con Node.js
-- **PostgreSQL** — base de datos utilizada por el proyecto
 - **Git** — para clonar y gestionar el repositorio
 
 ## 📥 Instalación
@@ -103,7 +102,7 @@ seeders/
 
 ## 🗄️ Base de datos
 
-El proyecto utiliza PostgreSQL como motor de base de datos y Sequelize como ORM.
+El proyecto utiliza **PostgreSQL** como motor de base de datos y **Sequelize** como ORM.
 Las migraciones permiten crear y modificar la estructura de la base de datos de manera controlada.
 
 Ejecutar las migraciones:
