@@ -36,7 +36,6 @@ export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
 
   await sequelize.authenticate();
-  // await sequelize.sync({ alter: true });
 
   console.log("[Database] ✅ Conexion establecida");
 }
