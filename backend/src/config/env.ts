@@ -16,5 +16,9 @@ function requireEnv(name: string): string {
 export const config = {
   port: parseInt(process.env.PORT || "3000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
+
   databaseUrl: requireEnv("DATABASE_URL"),
+
+  jwtSecret: requireEnv("JWT_SECRET"),
+  jwtExpiresIn: requireEnv("JWT_EXPIRES_IN"),
 };
