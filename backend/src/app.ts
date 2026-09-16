@@ -5,12 +5,15 @@ import swaggerUi from "swagger-ui-express";
 import { sequelize } from "./config/database.js";
 import { swaggerSpec } from "./config/swagger.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import indexRouter from "./routes/index.routes.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use("/api", indexRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "CondoTrack API funcionando" });
