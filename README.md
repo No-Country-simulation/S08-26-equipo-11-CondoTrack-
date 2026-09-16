@@ -50,10 +50,10 @@ El sistema implementa un modelo de seguridad basado en **5 roles explícitos**:
 | Rol | Descripción |
 | --- | --- |
 | `SUPER_ADMIN` | Administrador global del sistema (alta de administraciones, edificios y métricas consolidadas). |
-| `ADMINISTRATOR` | Gestión operativa de los edificios a su cargo, asignación de mantenimiento y aprobaciones. |
+| `ADMIN` | Gestión operativa de los edificios a su cargo, asignación de mantenimiento y aprobaciones. |
 | `RECEPTION` | Personal de portería encargado del control de accesos, verificación de QR y recepción/entrega de paquetes. |
-| `MAINTENANCE` | Personal encargado de la recepción, atención y resolución de reportes de mantenimiento. |
 | `RESIDENT` | Propietarios o inquilinos vinculados a una unidad específica (solicitudes, reservas, invitaciones y avisos). |
+| `MAINTENANCE` | Personal encargado de la recepción, atención y resolución de reportes de mantenimiento. |
 
 ---
 
@@ -66,9 +66,9 @@ El sistema implementa un modelo de seguridad basado en **5 roles explícitos**:
 | Node.js | Entorno de ejecución |
 | Express | Framework para API REST |
 | TypeScript | Tipado y desarrollo del backend |
-| PostgreSQL / Neon | Base de datos relacional serverless |
+| PostgreSQL / Neon | Base de datos relacional |
 | Sequelize | ORM para la gestión de modelos y migraciones |
-| Auth0 | Autenticación y gestión de identidades |
+| Neon | Serverless |
 | Swagger | Documentación interactiva de la API |
 | dotenv / CORS | Variables de entorno y configuración de orígenes |
 
@@ -169,8 +169,7 @@ frontend/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone [https://github.com/tu-organizacion/CondoTrack.git](https://github.com/No-Country-simulation/S08-26-equipo-11-CondoTrack-.git)
-cd CondoTrack
+git clone https://github.com/No-Country-simulation/S08-26-equipo-11-CondoTrack-.git
 ```
 
 ### 2. Configurar y levantar el Backend
@@ -184,9 +183,7 @@ Crear un archivo `.env` dentro de la carpeta `backend/`:
 
 ```env
 PORT=3000
-DATABASE_URL=postgresql://<usuario>:<password>@<host>/<database>
-AUTH0_DOMAIN=<tu-dominio-auth0>
-AUTH0_AUDIENCE=<tu-audience-auth0>
+DATABASE_URL=tu_url_de_postgresql
 ```
 
 Ejecutar el servidor de desarrollo:
@@ -234,7 +231,3 @@ http://localhost:3000/api-docs
 | María Grillo | QA Lead / QA Tester |
 
 ---
-
-
-
-
