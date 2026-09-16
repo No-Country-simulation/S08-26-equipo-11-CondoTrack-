@@ -17,4 +17,8 @@ export const config = {
   port: parseInt(process.env.PORT || "3000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
   databaseUrl: requireEnv("DATABASE_URL"),
+
+  googleClientId: requireEnv("GOOGLE_CLIENT_ID"),
+  googleClientSecret: requireEnv("GOOGLE_CLIENT_SECRET"),
+  googleCallbackUrl: requireEnv("GOOGLE_CALLBACK_URL"),
 };
