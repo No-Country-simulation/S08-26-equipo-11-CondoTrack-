@@ -1,16 +1,20 @@
-import cors from "cors";
 import express, { Request, Response } from "express";
+import cors from "cors";
+import passport from "passport";
 import swaggerUi from "swagger-ui-express";
 
 import { sequelize } from "./config/database.js";
 import { swaggerSpec } from "./config/swagger.js";
 import errorHandler from "./middlewares/errorHandler.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(passport.initialize());
+
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.json({ message: "CondoTrack API funcionando" });
@@ -32,6 +36,8 @@ app.get("/health", async (req: Request, res: Response) => {
     services: { database: databaseStatus },
   });
 });
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(errorHandler);
 

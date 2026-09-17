@@ -37,27 +37,32 @@ export class User
   @Column(DataType.STRING(100))
   declare lastName: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column(DataType.STRING(30))
-  declare documentType: string;
+  declare documentType: string | null;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Unique
   @Column(DataType.STRING(50))
-  declare documentNumber: string;
+  declare documentNumber: string | null;
 
   @AllowNull(false)
   @Unique
   @Column(DataType.STRING(150))
   declare email: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column(DataType.STRING(30))
-  declare phone: string;
+  declare phone: string | null;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Column(DataType.STRING(255))
-  declare passwordHash: string;
+  declare passwordHash: string | null;
+
+  @AllowNull(true)
+  @Unique
+  @Column(DataType.STRING(255))
+  declare googleId: string | null;
 
   @AllowNull(false)
   @Default("ACTIVE")
