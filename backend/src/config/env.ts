@@ -18,7 +18,11 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
 
   databaseUrl: requireEnv("DATABASE_URL"),
-
+  
   jwtSecret: requireEnv("JWT_SECRET"),
   jwtExpiresIn: requireEnv("JWT_EXPIRES_IN"),
+
+  googleClientId: requireEnv("GOOGLE_CLIENT_ID"),
+  googleClientSecret: requireEnv("GOOGLE_CLIENT_SECRET"),
+  googleCallbackUrl: requireEnv("GOOGLE_CALLBACK_URL"),
 };

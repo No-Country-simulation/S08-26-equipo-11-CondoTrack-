@@ -1,9 +1,9 @@
 import { Router } from "express";
 
-import authRouter from "../modules/auth/auth.routes.js";
+import authRoutes from "../modules/auth/auth.routes.js";
 
 const router = Router();
 
-router.use("/auth", authRouter); // registro de usuarios con formulario
+router.use("/auth", authRoutes); 
 
 export default router;
