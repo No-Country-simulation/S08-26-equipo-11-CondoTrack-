@@ -81,7 +81,14 @@ export class RegisterService {
       })
       .catch((error) => {
         if (error instanceof UniqueConstraintError) {
-          throw new AppError("El email ya está registrado", 409);
+          const constraint = (error.parent as any)?.constraint ?? "";
+          if (constraint.includes("email")) {
+            throw new AppError("El email ya está registrado", 409);
+          }
+          if (constraint.includes("document_number")) {
+            throw new AppError("El documento ya está registrado", 409);
+          }
+          throw new AppError("Ya existe un registro duplicado", 409);
         }
         throw error;
       });

@@ -1,94 +1,70 @@
+import { z } from "zod";
 import AppError from "../../../utils/AppError.js";
 
 export const PASSWORD_MIN_LENGTH = 8;
 
-//expresion regular para validar UUID y email (segun stack overflow)
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export interface RegisterDto {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  documentType: string;
-  documentNumber: string;
-  phone: string;
-  buildingId: string;
-}
+export const registerSchema = z.object({
+  firstName: z
+    .string({ error: "firstName es obligatorio" })
+    .trim()
+    .min(1, "firstName es obligatorio"),
+  lastName: z
+    .string({ error: "lastName es obligatorio" })
+    .trim()
+    .min(1, "lastName es obligatorio"),
+  documentType: z
+    .string({ error: "documentType es obligatorio" })
+    .trim()
+    .min(1, "documentType es obligatorio"),
+  documentNumber: z
+    .string({ error: "documentNumber es obligatorio" })
+    .trim()
+    .min(1, "documentNumber es obligatorio"),
+  phone: z
+    .string({ error: "phone es obligatorio" })
+    .trim()
+    .min(1, "phone es obligatorio"),
+  email: z
+    .string({ error: "email es obligatorio" })
+    .trim()
+    .toLowerCase()
+    .min(1, "email es obligatorio")
+    .refine(
+      (value) => value === "" || EMAIL_REGEX.test(value),
+      "email no tiene un formato válido",
+    ),
+  password: z
+    .string({ error: "password es obligatoria" })
+    .min(1, "password es obligatoria")
+    .refine(
+      (value) =>
+        value.length === 0 || value.length >= PASSWORD_MIN_LENGTH,
+      `password debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`,
+    ),
+  buildingId: z
+    .string({ error: "buildingId es obligatorio" })
+    .trim()
+    .min(1, "buildingId es obligatorio")
+    .refine(
+      (value) => value === "" || UUID_REGEX.test(value),
+      "buildingId no tiene un formato válido",
+    ),
+});
 
-function toRecord(input: unknown): Record<string, unknown> {
-  return typeof input === "object" && input !== null
-    ? (input as Record<string, unknown>)
-    : {};
-}
-
-function requiredText(
-  value: unknown,
-  fieldName: string,
-  errors: string[],
-): string {
-  const text = typeof value === "string" ? value.trim() : "";
-  if (!text) errors.push(`${fieldName} es obligatorio`);
-  return text;
-}
-
-function normalizeEmail(value: unknown, errors: string[]): string {
-  const email = (typeof value === "string" ? value.trim() : "").toLowerCase();
-  if (!email) errors.push("email es obligatorio");
-  else if (!EMAIL_REGEX.test(email)) errors.push("email no tiene un formato válido");
-  return email;
-}
-
-function validatePassword(value: unknown, errors: string[]): string {
-  const password = typeof value === "string" ? value : "";
-  if (!password) errors.push("password es obligatoria");
-  else if (password.length < PASSWORD_MIN_LENGTH) {
-    errors.push(`password debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`);
-  }
-  return password;
-}
-
-function validateBuildingId(value: unknown, errors: string[]): string {
-  const buildingId = typeof value === "string" ? value.trim() : "";
-  if (!buildingId) errors.push("buildingId es obligatorio");
-  else if (!UUID_REGEX.test(buildingId)) {
-    errors.push("buildingId no tiene un formato válido");
-  }
-  return buildingId;
-}
+export type RegisterDto = z.infer<typeof registerSchema>;
 
 export function validateRegisterDto(input: unknown): RegisterDto {
-  const body = toRecord(input);
-  const errors: string[] = [];
-
-  const firstName = requiredText(body.firstName, "firstName", errors);
-  const lastName = requiredText(body.lastName, "lastName", errors);
-  const documentType = requiredText(body.documentType, "documentType", errors);
-  const documentNumber = requiredText(
-    body.documentNumber,
-    "documentNumber",
-    errors,
-  );
-  const phone = requiredText(body.phone, "phone", errors);
-
-  const email = normalizeEmail(body.email, errors);
-  const password = validatePassword(body.password, errors);
-  const buildingId = validateBuildingId(body.buildingId, errors);
-
-  if (errors.length > 0) {
-    throw new AppError(errors.join("; "), 400);
+  try {
+    return registerSchema.parse(input);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const messages = error.issues.map((e) => e.message);
+      throw new AppError(messages.join("; "), 400);
+    }
+    throw error;
   }
-
-  return {
-    firstName,
-    lastName,
-    email,
-    password,
-    documentType,
-    documentNumber,
-    phone,
-    buildingId,
-  };
 }
