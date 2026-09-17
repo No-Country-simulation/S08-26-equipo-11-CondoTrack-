@@ -4,10 +4,49 @@
   padding: 0;
 }
 :root {
-  --ct-primary: #ffff;
+  --color-canvas: #f4f4f5;
+  --color-accent: #4f46e5;
+  --color-sidebar: #1e1b4b;
+  --color-amber: #f97316;
+
+  --ct-primary: var(--color-accent);
   --ct-font-base: "Inter", sans-serif;
+}
+
+html,
+body {
+  background-color: var(--color-canvas);
 }
 
 body {
   font-family: var(--ct-font-base);
+}
+
+.login-page {
+  background-color: var(--color-canvas);
+}
+
+.login-form {
+  max-width: 420px;
+  background-color: #ffffff;
+}
+
+.login-title {
+  color: var(--color-sidebar);
+}
+
+.login-link {
+  color: var(--color-accent);
+}
+
+.login-submit {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+}
+
+.login-submit:hover,
+.login-submit:focus {
+  border-color: var(--color-sidebar);
+  background-color: var(--color-sidebar);
+  color: #ffffff;
 }

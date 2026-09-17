@@ -1,16 +1,12 @@
-import { useState } from "react";
-import heroImg from "./assets/hero.png";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "./assets/vite.svg";
-import "./App.css";
+import AppRouter from "@/core/router/AppRouter";
+import { AuthProvider } from "@/modules/auth/contexts/AuthContext";
+import "./index.css";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <>
-      <h1 className="bg-primary text-black">Hola Mundo</h1>
-    </>
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
   );
 }
 
