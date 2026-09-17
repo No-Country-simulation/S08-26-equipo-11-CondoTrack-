@@ -18,52 +18,64 @@ export interface RegisterDto {
   buildingId: string;
 }
 
-function asString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+function toRecord(input: unknown): Record<string, unknown> {
+  return typeof input === "object" && input !== null
+    ? (input as Record<string, unknown>)
+    : {};
+}
+
+function requiredText(
+  value: unknown,
+  fieldName: string,
+  errors: string[],
+): string {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text) errors.push(`${fieldName} es obligatorio`);
+  return text;
+}
+
+function normalizeEmail(value: unknown, errors: string[]): string {
+  const email = (typeof value === "string" ? value.trim() : "").toLowerCase();
+  if (!email) errors.push("email es obligatorio");
+  else if (!EMAIL_REGEX.test(email)) errors.push("email no tiene un formato válido");
+  return email;
+}
+
+function validatePassword(value: unknown, errors: string[]): string {
+  const password = typeof value === "string" ? value : "";
+  if (!password) errors.push("password es obligatoria");
+  else if (password.length < PASSWORD_MIN_LENGTH) {
+    errors.push(`password debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`);
+  }
+  return password;
+}
+
+function validateBuildingId(value: unknown, errors: string[]): string {
+  const buildingId = typeof value === "string" ? value.trim() : "";
+  if (!buildingId) errors.push("buildingId es obligatorio");
+  else if (!UUID_REGEX.test(buildingId)) {
+    errors.push("buildingId no tiene un formato válido");
+  }
+  return buildingId;
 }
 
 export function validateRegisterDto(input: unknown): RegisterDto {
-  const body =
-    typeof input === "object" && input !== null
-      ? (input as Record<string, unknown>)
-      : {};
-
+  const body = toRecord(input);
   const errors: string[] = [];
 
-  const firstName = asString(body.firstName);
-  const lastName = asString(body.lastName);
-  const documentType = asString(body.documentType);
-  const documentNumber = asString(body.documentNumber);
-  const phone = asString(body.phone);
+  const firstName = requiredText(body.firstName, "firstName", errors);
+  const lastName = requiredText(body.lastName, "lastName", errors);
+  const documentType = requiredText(body.documentType, "documentType", errors);
+  const documentNumber = requiredText(
+    body.documentNumber,
+    "documentNumber",
+    errors,
+  );
+  const phone = requiredText(body.phone, "phone", errors);
 
-  if (!firstName) errors.push("firstName es obligatorio");
-  if (!lastName) errors.push("lastName es obligatorio");
-  if (!documentType) errors.push("documentType es obligatorio");
-  if (!documentNumber) errors.push("documentNumber es obligatorio");
-  if (!phone) errors.push("phone es obligatorio");
-
-  const email = asString(body.email).toLowerCase();
-  if (!email) {
-    errors.push("email es obligatorio");
-  } else if (!EMAIL_REGEX.test(email)) {
-    errors.push("email no tiene un formato válido");
-  }
-
-  const password = typeof body.password === "string" ? body.password : "";
-  if (!password) {
-    errors.push("password es obligatoria");
-  } else if (password.length < PASSWORD_MIN_LENGTH) {
-    errors.push(
-      `password debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`,
-    );
-  }
-
-  const buildingId = asString(body.buildingId);
-  if (!buildingId) {
-    errors.push("buildingId es obligatorio");
-  } else if (!UUID_REGEX.test(buildingId)) {
-    errors.push("buildingId no tiene un formato válido");
-  }
+  const email = normalizeEmail(body.email, errors);
+  const password = validatePassword(body.password, errors);
+  const buildingId = validateBuildingId(body.buildingId, errors);
 
   if (errors.length > 0) {
     throw new AppError(errors.join("; "), 400);
