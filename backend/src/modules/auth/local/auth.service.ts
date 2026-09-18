@@ -4,11 +4,13 @@ import { UniqueConstraintError } from "sequelize";
 import { sequelize } from "../../../config/database.js";
 import AppError from "../../../utils/AppError.js";
 import { RESIDENT_ROLE } from "../../roles/role.types.js";
-import { signToken } from "../jwt.js";
+import { signToken, JwtRole } from "../jwt.js";
+import { LoginUserDto } from "./login.dto.js";
 import { RegisterDto } from "./register.dto.js";
-import { RegisterRepository } from "./register.repository.js";
+import { LocalAuthRepository } from "./auth.repository.js";
 
 const BCRYPT_ROUNDS = 10; //hasheo de contraseña
+const INVALID_CREDENTIALS_MESSAGE = "Email o contraseña incorrectos";
 
 export interface RegisterResultRole {
   roleId: string;
@@ -27,14 +29,24 @@ export interface RegisterResult {
   token: string;
 }
 
-export class RegisterService {
-  constructor(private readonly registerRepository: RegisterRepository) {}
+export interface LoginResult {
+  user: {
+    id: string;
+    email: string;
+    roles: JwtRole[];
+  };
+  token: string;
+}
 
+export class LocalAuthService {
+  constructor(private readonly authRepository: LocalAuthRepository) {}
+
+  // POST /api/auth/register
   async register(dto: RegisterDto): Promise<RegisterResult> {
     const email = dto.email.trim().toLowerCase();
 
     //chequear que no este ya en DB
-    const existing = await this.registerRepository.findUserByEmail(email);
+    const existing = await this.authRepository.findUserByEmail(email);
     if (existing) {
       throw new AppError("El email ya está registrado", 409);
     }
@@ -45,7 +57,7 @@ export class RegisterService {
     //crear el usuario desde el repository y asignarle el rol default RESIDENT
     const { user, residentRoleId } = await sequelize
       .transaction(async (transaction) => {
-        const residentRole = await this.registerRepository.findRoleByName(
+        const residentRole = await this.authRepository.findRoleByName(
           RESIDENT_ROLE,
           transaction,
         );
@@ -53,7 +65,7 @@ export class RegisterService {
           throw new AppError("El rol RESIDENT no está configurado", 500);
         }
 
-        const user = await this.registerRepository.createUser(
+        const user = await this.authRepository.createUser(
           {
             firstName: dto.firstName,
             lastName: dto.lastName,
@@ -68,7 +80,7 @@ export class RegisterService {
           transaction,
         );
 
-        await this.registerRepository.createUserBuildingRole(
+        await this.authRepository.createUserBuildingRole(
           {
             userId: user.id,
             roleId: residentRole.id,
@@ -108,6 +120,42 @@ export class RegisterService {
             roleName: RESIDENT_ROLE,
           },
         ],
+      },
+      token,
+    };
+  }
+
+  //POST /api/auth/login
+  async login(dto: LoginUserDto): Promise<LoginResult> {
+    const user = await this.authRepository.findUserByEmail(dto.email, {
+      includePasswordHash: true,
+    });
+
+    if (!user) {
+      throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
+    }
+    //verificar que la contraseña coincida con la de DB
+    const passwordMatches = user.passwordHash
+      ? await bcrypt.compare(dto.password, user.passwordHash)
+      : false;
+
+    if (!passwordMatches) {
+      throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
+    }
+
+    //verificar roles asignados del usuario
+    const roles = await this.authRepository.findUserRoles(user.id);
+    if (roles.length === 0) {
+      throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
+    }
+
+    const token = signToken({ sub: user.id, roles });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        roles,
       },
       token,
     };
