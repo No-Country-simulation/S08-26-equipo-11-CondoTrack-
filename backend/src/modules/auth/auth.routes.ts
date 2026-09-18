@@ -17,10 +17,6 @@ router.post("/register", (req, res, next) =>
   authController.register(req, res, next),
 );
 
-router.get("/test", (req, res) => {
-  res.json({ message: "Auth routes funcionando" });
-});
-
 router.get(
   "/google",
   passport.authenticate("google", {
