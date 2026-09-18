@@ -19,7 +19,11 @@ const options: swaggerJSDoc.Options = {
       { url: "http://localhost:3000", description: "Desarrollo local" },
     ],
   },
-  apis: [path.join(process.cwd(), "src/docs/openapi.docs.ts")],
+    apis: [
+    path
+      .join(process.cwd(), "src", "docs", "*.docs.ts")
+      .replace(/\\/g, "/"),
+  ],
 };
 
 export const swaggerSpec = swaggerJSDoc(options);

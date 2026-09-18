@@ -218,6 +218,14 @@
  *         state:
  *           type: string
  *           maxLength: 100
+ *         numberOfFloors:
+ *           type: integer
+ *           minimum: 0
+ *           example: 12
+ *         numberOfUnits:
+ *           type: integer
+ *           minimum: 0
+ *           example: 48
  *         zipCode:
  *           type: string
  *           nullable: true
@@ -235,6 +243,44 @@
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *     CreateBuildingRequest:
+ *       type: object
+ *       required:
+ *       - name
+ *       - address
+ *       - city
+ *       - state
+ *       - numberOfFloors
+ *       - numberOfUnits
+ *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           example: Torres del Parque
+ *         address:
+ *           type: string
+ *           minLength: 1
+ *           example: Av. Siempre Viva 123
+ *         city:
+ *           type: string
+ *           example: Buenos Aires
+ *         state:
+ *           type: string
+ *           example: Buenos Aires
+ *         numberOfFloors:
+ *           type: integer
+ *           minimum: 1
+ *           example: 12
+ *         numberOfUnits:
+ *           type: integer
+ *           minimum: 1
+ *           example: 48
+ *         zipCode:
+ *           type: string
+ *           example: C1425
+ *         description:
+ *           type: string
+ *           example: Edificio residencial.
  *     Unit:
  *       type: object
  *       description: Tabla `units`. Combinación única de (buildingId, unitNumber).
@@ -347,6 +393,8 @@
  *   description: Endpoints generales de estado del servidor
  * - name: Auth
  *   description: Registro y autenticación (local y Google OAuth 2.0)
+ * - name: Buildings
+ *   description: Gestión de edificios
  * - name: Modelos de datos
  *   description: Entidades ya modeladas en Sequelize 
  */
