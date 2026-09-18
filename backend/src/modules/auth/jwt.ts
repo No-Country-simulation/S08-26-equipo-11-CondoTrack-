@@ -1,8 +1,15 @@
 import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
 import { config } from "../../config/env.js";
 
+export interface JwtRole {
+  roleId: string;
+  buildingId: string;
+  roleName: string;
+}
+
 export interface JwtPayloadBase {
   sub: string; //recibe el id del user
+  roles?: JwtRole[]; //guardar los roles del usuario
 }
 
 export function signToken(payload: JwtPayloadBase): string {

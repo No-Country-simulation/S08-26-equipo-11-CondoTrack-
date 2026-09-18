@@ -1,21 +1,23 @@
 import { Router } from "express";
 import passport from "passport";
 
-import { AuthController } from "./local/register.controller.js";
-import { RegisterRepository } from "./local/register.repository.js";
-import { RegisterService } from "./local/register.service.js";
+import { AuthController } from "./local/auth.controller.js";
+import { LocalAuthRepository } from "./local/auth.repository.js";
+import { LocalAuthService } from "./local/auth.service.js";
 import { googleCallback } from "./auth.controller.js";
 import "./strategies/google.strategy.js";
 
 const router = Router();
 
-const registerRepository = new RegisterRepository();
-const registerService = new RegisterService(registerRepository);
-const authController = new AuthController(registerService);
+const authRepository = new LocalAuthRepository();
+const authService = new LocalAuthService(authRepository);
+const authController = new AuthController(authService);
 
 router.post("/register", (req, res, next) =>
   authController.register(req, res, next),
 );
+
+router.post("/login", (req, res, next) => authController.login(req, res, next));
 
 router.get(
   "/google",
