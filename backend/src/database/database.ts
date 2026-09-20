@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
-import { config } from "./env.js";
+import { config } from "../config/env.js";
 
 import { User } from "../modules/users/user.model.js";
 import { Role } from "../modules/roles/role.model.js";
