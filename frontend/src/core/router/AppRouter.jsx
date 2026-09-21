@@ -1,26 +1,33 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { LoginPage } from "@/modules/auth/page/LoginPage";
 import ProtectedRoute from "@/core/router/ProtectedRoute";
-import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { lazy, Suspense } from "react";
 
-function Dashboard() {
-  const { logout } = useAuth();
+const LoginPage = lazy(() =>
+  import("@/modules/auth/page/LoginPage").then((module) => ({
+    default: module.LoginPage,
+  })),
+);
+const RegisterPage = lazy(() =>
+  import("@/modules/auth/page/RegisterPage").then((module) => ({
+    default: module.RegisterPage,
+  })),
+);
 
-  return (
-    <main>
-      <h1>Dashboard</h1>
-      <p>Esta ruta está protegida.</p>
-      <button type="button" onClick={logout}>
-        Cerrar sesión
-      </button>
-    </main>
-  );
-}
+const DashboardLayout = lazy(() =>
+  import("@/modules/dashboard/layout/DashboardLayout").then((m) => ({
+    default: m.DashboardLayout,
+  })),
+);
+const ActivityPage = lazy(() =>
+  import("@/modules/dashboard/pages/ActivityPage").then((m) => ({
+    default: m.ActivityPage,
+  })),
+);
 
 function NotFound() {
   return (
     <main>
-      <h1>Página no encontrada</h1>
+      <h1 className="">Página no encontrada</h1>
       <Navigate to="/login" replace />
     </main>
   );
@@ -29,19 +36,26 @@ function NotFound() {
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<p>Cargando...</p>}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="actividad" element={<ActivityPage />} />
+          </Route>
+
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
