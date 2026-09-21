@@ -4,11 +4,12 @@ export interface UserAttributes {
   id: string;
   firstName: string;
   lastName: string;
-  documentType: string;
-  documentNumber: string;
+  documentType: string | null;
+  documentNumber: string | null;
   email: string;
-  phone: string;
-  passwordHash: string;
+  phone: string | null;
+  passwordHash: string | null;
+  googleId: string | null;
   status: UserStatus;
   lastLoginAt: Date | null;
   createdAt?: Date;

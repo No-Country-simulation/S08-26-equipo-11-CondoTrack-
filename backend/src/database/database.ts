@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
-import { config } from "./env.js";
+import { config } from "../config/env.js";
 
 import { User } from "../modules/users/user.model.js";
 import { Role } from "../modules/roles/role.model.js";
@@ -36,7 +36,6 @@ export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
 
   await sequelize.authenticate();
-  // await sequelize.sync({ alter: true });
 
   console.log("[Database] ✅ Conexion establecida");
 }
