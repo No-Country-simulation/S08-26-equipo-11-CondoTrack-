@@ -24,6 +24,12 @@ const ActivityPage = lazy(() =>
   })),
 );
 
+const ResidentsPage = lazy(() =>
+  import("@/modules/residents/pages/ResidentsPage").then((m) => ({
+    default: m.ResidentsPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -49,6 +55,7 @@ export default function AppRouter() {
               </ProtectedRoute>
             }
           >
+            <Route path="residentes" element={<ResidentsPage />} />
             <Route path="actividad" element={<ActivityPage />} />
           </Route>
 
