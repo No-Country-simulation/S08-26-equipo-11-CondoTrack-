@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { UniqueConstraintError } from "sequelize";
 
-import { sequelize } from "../../../config/database.js";
+import { sequelize } from "../../../database/database.js";
 import AppError from "../../../utils/AppError.js";
 import { RESIDENT_ROLE } from "../../roles/role.types.js";
 import { signToken, JwtRole } from "../jwt.js";

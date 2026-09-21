@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
-import { authenticateWithGoogle } from "./auth.service.js";
-import { GoogleUserData } from "./auth.types.js";
+import { authenticateWithGoogle } from "./google.service.js";
+import { GoogleUserData } from "./google.types.js";
 
 export async function googleCallback(
   req: Request,

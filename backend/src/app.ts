@@ -3,7 +3,7 @@ import cors from "cors";
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
 
-import { sequelize } from "./config/database.js";
+import { sequelize } from "./database/database.js";
 import { swaggerSpec } from "./config/swagger.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import indexRouter from "./routes/index.routes.js";

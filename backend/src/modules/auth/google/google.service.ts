@@ -1,6 +1,6 @@
-import { User } from "../users/user.model.js";
-import { signToken } from "./jwt.js";
-import { GoogleUserData } from "./auth.types.js";
+import { User } from "../../users/user.model.js";
+import { signToken } from "../jwt.js";
+import { GoogleUserData } from "./google.types.js";
 
 export async function authenticateWithGoogle(
   googleUser: GoogleUserData,

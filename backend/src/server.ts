@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { config } from "./config/env.js";
-import { checkDatabaseConnection } from "./config/database.js";
-import { sequelize } from "./config/database.js";
+import { checkDatabaseConnection } from "./database/database.js";
+import { sequelize } from "./database/database.js";
 
 async function startServer() {
   try {
