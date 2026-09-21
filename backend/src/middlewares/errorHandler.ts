@@ -7,7 +7,6 @@ import {
 
 import AppError from "../utils/AppError.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any para que TS no llore
 const errorHandler = (
   err: any,
   req: Request,
@@ -19,7 +18,6 @@ const errorHandler = (
   if (!error.statusCode) error.statusCode = 500;
   if (!error.status) error.status = "error";
 
-  //manejo de errores espcificos de sequelize
   if (err instanceof SequelizeValidationError) {
     error = new AppError(err.errors.map((e) => e.message).join(", "), 422);
   } else if (err instanceof SequelizeUniqueConstraintError) {
@@ -34,7 +32,6 @@ const errorHandler = (
     );
   }
 
-  //en produccion no se muestran los detalles por seguridad
   if (process.env.NODE_ENV === "production") {
     if (error.isOperational) {
       return res

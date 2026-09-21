@@ -35,8 +35,8 @@ export class LocalAuthRepository {
     options: { includePasswordHash?: boolean } = {},
   ): Promise<User | null> {
     const attributes = options.includePasswordHash
-      ? ["id", "firstName", "lastName", "email", "passwordHash"]
-      : ["id"]; //condicional para incluir la contrseña
+      ? ["id", "firstName", "lastName", "email", "passwordHash", "status"]
+      : ["id"];
 
     return User.findOne({
       where: { email },
@@ -74,7 +74,6 @@ export class LocalAuthRepository {
         },
       ],
     });
-
     return rows.map((row) => {
       const role = row.get("role") as Role;
       return {
@@ -83,5 +82,9 @@ export class LocalAuthRepository {
         roleName: role.name,
       };
     });
+  }
+
+  async updateLastLoginAt(userId: string): Promise<void> {
+    await User.update({ lastLoginAt: new Date() }, { where: { id: userId } });
   }
 }
