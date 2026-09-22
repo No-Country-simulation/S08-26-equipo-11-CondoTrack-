@@ -58,6 +58,18 @@ const MovesPage = lazy(() =>
   })),
 );
 
+const MaintenancePage = lazy(() =>
+  import("@/modules/maintenance/pages/MaintenancePage").then((m) => ({
+    default: m.MaintenancePage,
+  })),
+);
+
+const IncidentsPage = lazy(() =>
+  import("@/modules/incidents/pages/IncidentsPage").then((m) => ({
+    default: m.IncidentsPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -90,6 +102,8 @@ export default function AppRouter() {
             <Route path="deliveries" element={<DeliveriesPage />} />
             <Route path="reservas" element={<ReservationsPage />} />
             <Route path="mudanzas" element={<MovesPage />} />
+            <Route path="mantenimiento" element={<MaintenancePage />} />
+            <Route path="incidentes" element={<IncidentsPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
