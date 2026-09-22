@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { GoogleAuthButton } from "@/modules/auth/components/GoogleAuthButton";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export const LoginPage = () => {
 
     try {
       await login(email, password);
-      navigate("/dashboard", { replace: true });
+      navigate("/inicio", { replace: true });
     } catch {
       setError("No se pudo iniciar sesión. Verifica tus credenciales.");
     }
@@ -87,6 +88,21 @@ export const LoginPage = () => {
         >
           {loading ? "Ingresando..." : "Iniciar sesión"}
         </button>
+
+        <div className="d-flex align-items-center gap-2 my-3">
+          <hr className="flex-grow-1" />
+          <span className="text-muted small">o</span>
+          <hr className="flex-grow-1" />
+        </div>
+
+        <GoogleAuthButton />
+
+        <p className="text-center mt-3 mb-0">
+          ¿Sos dueño de un edificio y todavía no tenés cuenta?{" "}
+          <Link to="/register" className="login-link text-decoration-none">
+            Registrate
+          </Link>
+        </p>
       </form>
     </div>
   );

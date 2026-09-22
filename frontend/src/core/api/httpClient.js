@@ -4,6 +4,7 @@ import { appConfig } from '@/core/config/env';
 
 const httpClient = axios.create({
   baseURL: appConfig.apiUrl,
+  withCredentials: true,
   headers: {
 
     'Content-Type': 'application/json'
