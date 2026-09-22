@@ -42,6 +42,12 @@ const AccessPage = lazy(() =>
   })),
 );
 
+const DeliveriesPage = lazy(() =>
+  import("@/modules/deliveries/pages/DeliveriesPage").then((m) => ({
+    default: m.DeliveriesPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -71,6 +77,7 @@ export default function AppRouter() {
             <Route path="actividad" element={<ActivityPage />} />
             <Route path="personal" element={<StaffPage />} />
             <Route path="accesos" element={<AccessPage />} />
+            <Route path="deliveries" element={<DeliveriesPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
