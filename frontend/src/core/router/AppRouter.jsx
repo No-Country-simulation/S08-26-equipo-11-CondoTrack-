@@ -75,6 +75,12 @@ const CommunicationsPage = lazy(() =>
   })),
 );
 
+const BuildingsPage = lazy(() =>
+  import("@/modules/buildings/pages/BuildingsPage").then((m) => ({
+    default: m.BuildingsPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -110,6 +116,7 @@ export default function AppRouter() {
             <Route path="mantenimiento" element={<MaintenancePage />} />
             <Route path="incidentes" element={<IncidentsPage />} />
             <Route path="comunicaciones" element={<CommunicationsPage />} />
+            <Route path="edificios" element={<BuildingsPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
