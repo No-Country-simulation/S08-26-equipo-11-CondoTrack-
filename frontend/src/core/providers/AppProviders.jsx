@@ -11,6 +11,7 @@ import { AccessLogsProvider } from "@/modules/access/context/AccessLogsContext";
 import { DeliveriesProvider } from "@/modules/deliveries/context/DeliveriesContext";
 import { MovesProvider } from "@/modules/moves/context/MovesContext";
 import { MaintenanceProvider } from "@/modules/maintenance/context/MaintenanceContext";
+import { IncidentsProvider } from "@/modules/incidents/context/IncidentsContext";
 
 // El orden importa: cada provider puede usar los hooks de los anteriores
 // (ActivityLog y Notifications son la base que consumen casi todos los demás).
@@ -27,6 +28,7 @@ const PROVIDERS = [
   DeliveriesProvider,
   MovesProvider,
   MaintenanceProvider,
+  IncidentsProvider,
 ];
 
 export function AppProviders({ children }) {
