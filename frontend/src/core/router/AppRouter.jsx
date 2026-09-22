@@ -69,6 +69,11 @@ const IncidentsPage = lazy(() =>
     default: m.IncidentsPage,
   })),
 );
+const CommunicationsPage = lazy(() =>
+  import("@/modules/notifications/pages/CommunicationsPage").then((m) => ({
+    default: m.CommunicationsPage,
+  })),
+);
 
 function NotFound() {
   return (
@@ -104,6 +109,7 @@ export default function AppRouter() {
             <Route path="mudanzas" element={<MovesPage />} />
             <Route path="mantenimiento" element={<MaintenancePage />} />
             <Route path="incidentes" element={<IncidentsPage />} />
+            <Route path="comunicaciones" element={<CommunicationsPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
