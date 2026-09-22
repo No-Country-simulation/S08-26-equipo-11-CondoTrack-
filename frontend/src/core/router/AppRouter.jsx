@@ -93,6 +93,12 @@ const DashboardHomePage = lazy(() =>
   })),
 );
 
+const RoleSelectorPage = lazy(() =>
+  import("@/modules/home/pages/RoleSelectorPage").then((m) => ({
+    default: m.RoleSelectorPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -109,7 +115,14 @@ export default function AppRouter() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
+          <Route
+            path="/inicio"
+            element={
+              <ProtectedRoute>
+                <RoleSelectorPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
