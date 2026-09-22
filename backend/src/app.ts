@@ -39,6 +39,11 @@ app.get("/health", async (req: Request, res: Response) => {
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// 404 catch-all: ruta no encontrada. tiene que ir al final, despues de TODAS las rutas y routers montados
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ success: false, message: "Ruta no encontrada" });
+});
+
 app.use(errorHandler);
 
 export default app;
