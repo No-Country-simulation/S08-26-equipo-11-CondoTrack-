@@ -127,3 +127,46 @@ export const authorizeRoles = (
     next();
   });
 };
+
+export const authorizeBuildingRoles = (
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  return catchAsync((req, res, next) => {
+    const authUser = req.authenticatedUser;
+
+    if (!authUser) {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
+    }
+
+    const buildingIdParam = req.params.buildingId;
+
+    const buildingId = Array.isArray(buildingIdParam)
+      ? buildingIdParam[0]
+      : buildingIdParam;
+
+    if (!buildingId) {
+      throw new AppError("El identificador del edificio es obligatorio", 400);
+    }
+
+    const isSuperAdmin = authUser.roles.some(
+      (role) => role.roleName === "SUPER_ADMIN",
+    );
+
+    if (isSuperAdmin) {
+      next();
+      return;
+    }
+
+    const hasBuildingRole = authUser.roles.some(
+      (role) =>
+        role.buildingId === buildingId &&
+        allowedRoles.includes(role.roleName as SystemRole),
+    );
+
+    if (!hasBuildingRole) {
+      throw new AppError(FORBIDDEN_MESSAGE, 403);
+    }
+
+    next();
+  });
+};

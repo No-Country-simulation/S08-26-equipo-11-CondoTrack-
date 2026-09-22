@@ -5,6 +5,7 @@ import {
   authorizeRoles,
 } from "../../middlewares/auth.middleware.js";
 import { SUPER_ADMIN_ROLE } from "../roles/role.types.js";
+import unitRoutes from "../units/unit.routes.js";
 import { BuildingController } from "./building.controller.js";
 import { BuildingService } from "./building.service.js";
 
@@ -19,5 +20,7 @@ router.post(
   authorizeRoles(SUPER_ADMIN_ROLE),
   buildingController.create,
 );
+
+router.use("/:buildingId/units", unitRoutes);
 
 export default router;

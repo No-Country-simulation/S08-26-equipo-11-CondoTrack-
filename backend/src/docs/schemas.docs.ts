@@ -339,7 +339,14 @@
  *
  *     Unit:
  *       type: object
- *       description: Tabla `units`. Combinación única de (buildingId, unitNumber).
+ *       description: Unidad perteneciente a un edificio.
+ *       required:
+ *         - id
+ *         - buildingId
+ *         - code
+ *         - floor
+ *         - unitType
+ *         - isActive
  *       properties:
  *         id:
  *           type: string
@@ -347,30 +354,57 @@
  *         buildingId:
  *           type: string
  *           format: uuid
- *         unitNumber:
+ *         code:
  *           type: string
  *           maxLength: 20
- *           example: TORRE-A-302
+ *           example: 4B
  *         floor:
  *           type: integer
- *           nullable: true
- *         type:
+ *           minimum: 0
+ *           example: 4
+ *         unitType:
  *           type: string
- *           nullable: true
  *           maxLength: 50
- *         areaM2:
- *           type: number
- *           format: double
- *           nullable: true
+ *           example: DEPARTMENT
  *         description:
  *           type: string
  *           nullable: true
+ *           example: Departamento de dos ambientes
+ *         isActive:
+ *           type: boolean
+ *           default: true
  *         createdAt:
  *           type: string
  *           format: date-time
  *         updatedAt:
  *           type: string
  *           format: date-time
+ *
+ *     CreateUnitRequest:
+ *       type: object
+ *       required:
+ *         - code
+ *         - floor
+ *         - unitType
+ *       properties:
+ *         code:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 20
+ *           example: 4B
+ *         floor:
+ *           type: integer
+ *           minimum: 0
+ *           example: 4
+ *         unitType:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 50
+ *           example: DEPARTMENT
+ *         description:
+ *           type: string
+ *           example: Departamento de dos ambientes
+ *
  *
  *     UserBuildingRole:
  *       type: object
