@@ -52,6 +52,11 @@ const ReservationsPage = lazy(() =>
     default: m.ReservationsPage,
   })),
 );
+const MovesPage = lazy(() =>
+  import("@/modules/moves/pages/MovesPage").then((m) => ({
+    default: m.MovesPage,
+  })),
+);
 
 function NotFound() {
   return (
@@ -84,6 +89,7 @@ export default function AppRouter() {
             <Route path="accesos" element={<AccessPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
             <Route path="reservas" element={<ReservationsPage />} />
+            <Route path="mudanzas" element={<MovesPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
