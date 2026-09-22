@@ -87,6 +87,12 @@ const BuildingDetailPage = lazy(() =>
   })),
 );
 
+const DashboardHomePage = lazy(() =>
+  import("@/modules/dashboard/pages/DashboardHomePage").then((m) => ({
+    default: m.DashboardHomePage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -127,6 +133,7 @@ export default function AppRouter() {
               path="edificios/:buildingId"
               element={<BuildingDetailPage />}
             />
+            <Route index element={<DashboardHomePage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
