@@ -30,6 +30,12 @@ const ResidentsPage = lazy(() =>
   })),
 );
 
+const StaffPage = lazy(() =>
+  import("@/modules/staff/pages/StaffPage").then((m) => ({
+    default: m.StaffPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -57,6 +63,7 @@ export default function AppRouter() {
           >
             <Route path="residentes" element={<ResidentsPage />} />
             <Route path="actividad" element={<ActivityPage />} />
+            <Route path="personal" element={<StaffPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
