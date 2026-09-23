@@ -106,8 +106,8 @@ export class LocalAuthService {
     return {
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.person?.firstName ?? "",
+        lastName: user.person?.lastName ?? "",
         email: user.email,
         roles: [
           {

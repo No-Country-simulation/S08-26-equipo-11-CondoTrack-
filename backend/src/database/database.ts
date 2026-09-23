@@ -7,6 +7,8 @@ import { Building } from "../modules/buildings/building.model.js";
 import { Unit } from "../modules/units/unit.model.js";
 import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
 import { AuditLog } from "../modules/audit/audit.model.js";
+import { Person } from "../modules/people/people.model.js";
+import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
 
 import { setupRelations } from "./relations.models.js";
 
@@ -16,7 +18,16 @@ export const sequelize = new Sequelize(config.databaseUrl, {
   dialect: "postgres",
   protocol: "postgres",
 
-  models: [User, Role, Building, Unit, AuditLog, UserBuildingRole],
+  models: [
+    User,
+    Role,
+    Building,
+    Unit,
+    AuditLog,
+    UserBuildingRole,
+    Person,
+    UnitPeople,
+  ],
 
   logging: isProduction
     ? false
