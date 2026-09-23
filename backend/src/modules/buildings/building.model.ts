@@ -11,7 +11,7 @@ import {
   UpdatedAt,
 } from "sequelize-typescript";
 
-interface BuildingCreationAttributes {
+export interface BuildingCreationAttributes {
   name: string;
   address: string;
   city: string;
