@@ -75,6 +75,30 @@ const CommunicationsPage = lazy(() =>
   })),
 );
 
+const BuildingsPage = lazy(() =>
+  import("@/modules/buildings/pages/BuildingsPage").then((m) => ({
+    default: m.BuildingsPage,
+  })),
+);
+
+const BuildingDetailPage = lazy(() =>
+  import("@/modules/buildings/pages/BuildingDetailPage").then((m) => ({
+    default: m.BuildingDetailPage,
+  })),
+);
+
+const DashboardHomePage = lazy(() =>
+  import("@/modules/dashboard/pages/DashboardHomePage").then((m) => ({
+    default: m.DashboardHomePage,
+  })),
+);
+
+const RoleSelectorPage = lazy(() =>
+  import("@/modules/home/pages/RoleSelectorPage").then((m) => ({
+    default: m.RoleSelectorPage,
+  })),
+);
+
 function NotFound() {
   return (
     <main>
@@ -91,7 +115,14 @@ export default function AppRouter() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
+          <Route
+            path="/inicio"
+            element={
+              <ProtectedRoute>
+                <RoleSelectorPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -110,6 +141,12 @@ export default function AppRouter() {
             <Route path="mantenimiento" element={<MaintenancePage />} />
             <Route path="incidentes" element={<IncidentsPage />} />
             <Route path="comunicaciones" element={<CommunicationsPage />} />
+            <Route path="edificios" element={<BuildingsPage />} />
+            <Route
+              path="edificios/:buildingId"
+              element={<BuildingDetailPage />}
+            />
+            <Route index element={<DashboardHomePage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
