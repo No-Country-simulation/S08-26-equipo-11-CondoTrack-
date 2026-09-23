@@ -5,6 +5,7 @@ import { Role } from "../modules/roles/role.model.js";
 import { SystemRole } from "../modules/roles/role.types.js";
 import { User } from "../modules/users/user.model.js";
 import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
+import { Person } from "../modules/people/people.model.js";
 import AppError from "../utils/AppError.js";
 import catchAsync from "../utils/catchAsync.js";
 
@@ -64,8 +65,16 @@ export const authenticate: RequestHandler = catchAsync(
     }
 
     //info del usuario, sin contraseña ni datos sensibles
+    //firstName/lastName viven en people (Person), no en users
     const user = await User.findByPk(userId, {
-      attributes: ["id", "firstName", "lastName", "email"],
+      attributes: ["id", "email"],
+      include: [
+        {
+          model: Person,
+          as: "person",
+          attributes: ["id", "firstName", "lastName"],
+        },
+      ],
     });
 
     if (!user) {
@@ -96,8 +105,8 @@ export const authenticate: RequestHandler = catchAsync(
 
     req.authenticatedUser = {
       id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.person?.firstName ?? "",
+      lastName: user.person?.lastName ?? "",
       email: user.email,
       roles,
     };
