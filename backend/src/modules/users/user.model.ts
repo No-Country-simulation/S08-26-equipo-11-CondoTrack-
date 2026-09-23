@@ -7,6 +7,7 @@ import {
   Default,
   AllowNull,
   Unique,
+  ForeignKey,
 } from "sequelize-typescript";
 
 import {
@@ -14,6 +15,7 @@ import {
   UserCreationAttributes,
   UserStatus,
 } from "./user.types.js";
+import People from "../people/people.model.js";
 
 @Table({
   tableName: "users",
@@ -29,31 +31,39 @@ export class User
   @Column(DataType.UUID)
   declare id: string;
 
-  @AllowNull(false)
-  @Column(DataType.STRING(100))
-  declare firstName: string;
+  // @AllowNull(false)
+  // @Column(DataType.STRING(100))
+  // declare firstName: string;
 
-  @AllowNull(false)
-  @Column(DataType.STRING(100))
-  declare lastName: string;
-
-  @AllowNull(true)
-  @Column(DataType.STRING(30))
-  declare documentType: string | null;
+  // @AllowNull(false)
+  // @Column(DataType.STRING(100))
+  // declare lastName: string;
 
   @AllowNull(true)
   @Unique
-  @Column(DataType.STRING(50))
-  declare documentNumber: string | null;
+  @ForeignKey(() => People)
+  @Column(DataType.UUID)
+  declare personId: string | null;
+
+  declare person?: People | null;
+
+  // @AllowNull(true)
+  // @Column(DataType.STRING(30))
+  // declare documentType: string | null;
+
+  // @AllowNull(true)
+  // @Unique
+  // @Column(DataType.STRING(50))
+  // declare documentNumber: string | null;
 
   @AllowNull(false)
   @Unique
   @Column(DataType.STRING(150))
   declare email: string;
 
-  @AllowNull(true)
-  @Column(DataType.STRING(30))
-  declare phone: string | null;
+  // @AllowNull(true)
+  // @Column(DataType.STRING(30))
+  // declare phone: string | null;
 
   @AllowNull(true)
   @Column(DataType.STRING(255))

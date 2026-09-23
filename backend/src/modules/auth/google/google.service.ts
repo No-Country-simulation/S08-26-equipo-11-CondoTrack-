@@ -13,12 +13,8 @@ export async function authenticateWithGoogle(
 
   if (!user) {
     user = await User.create({
-      firstName: googleUser.firstName,
-      lastName: googleUser.lastName,
-      documentType: null,
-      documentNumber: null,
+      //los datos civiles (firstName/lastName/documentType/...) viven en Person (people), no en User
       email: googleUser.email,
-      phone: null,
       passwordHash: null,
       googleId: googleUser.googleId,
       status: "ACTIVE",
