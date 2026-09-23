@@ -47,6 +47,16 @@ const DeliveriesPage = lazy(() =>
     default: m.DeliveriesPage,
   })),
 );
+const ReservationsPage = lazy(() =>
+  import("@/modules/reservations/pages/ReservationsPage").then((m) => ({
+    default: m.ReservationsPage,
+  })),
+);
+const MovesPage = lazy(() =>
+  import("@/modules/moves/pages/MovesPage").then((m) => ({
+    default: m.MovesPage,
+  })),
+);
 
 function NotFound() {
   return (
@@ -78,6 +88,8 @@ export default function AppRouter() {
             <Route path="personal" element={<StaffPage />} />
             <Route path="accesos" element={<AccessPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
+            <Route path="reservas" element={<ReservationsPage />} />
+            <Route path="mudanzas" element={<MovesPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />
