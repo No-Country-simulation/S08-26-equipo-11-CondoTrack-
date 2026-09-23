@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import AppError from "../../utils/AppError.js";
+import AppError from "../../../utils/AppError.js";
 
 const listUnitsSchema = z.object({
   page: z.coerce.number().int().positive().default(1),

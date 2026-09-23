@@ -1,7 +1,7 @@
 import AppError from "../../utils/AppError.js";
 import { Building } from "../buildings/building.model.js";
-import { CreateUnitDto } from "./create-unit.dto.js";
-import { ListUnitsDto } from "./list-units.dto.js";
+import { CreateUnitDto } from "./dto/create-unit.dto.js";
+import { ListUnitsDto } from "./dto/list-units.dto.js";
 import {
   countActiveUnitsByBuilding,
   createUnit,
