@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { config } from "./config/env.js";
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
 
@@ -10,7 +11,12 @@ import indexRouter from "./routes/index.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: config.frontendUrl,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(passport.initialize());
 
