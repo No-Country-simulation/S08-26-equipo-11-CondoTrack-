@@ -139,5 +139,72 @@
  *         '401':
  *           description: Passport no pudo autenticar al usuario con Google (email ausente en el perfil, etc.)
  */
+/**
+ * @openapi
+ * paths:
+ *   /api/auth/me:
+ *     get:
+ *       tags:
+ *         - Auth
+ *       summary: Obtener el usuario autenticado
+ *       security:
+ *         - bearerAuth: []
+ *       responses:
+ *         '200':
+ *           description: Datos del usuario autenticado
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                       status:
+ *                         $ref: '#/components/schemas/UserStatus'
+ *                       roles:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             roleId:
+ *                               type: string
+ *                               format: uuid
+ *                             buildingId:
+ *                               type: string
+ *                               format: uuid
+ *                             roleName:
+ *                               type: string
+ *                       buildings:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             name:
+ *                               type: string
+ *                       units:
+ *                         type: array
+ *                         description: Unidades asignadas al usuario; actualmente no existe esa relación en main.
+ *                         items:
+ *                           type: object
+ *         '401':
+ *           description: JWT ausente, inválido o expirado, o usuario inexistente
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ */
 
 export {};

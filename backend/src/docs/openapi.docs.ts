@@ -17,8 +17,6 @@
  *     description: Registro y autenticación (local y Google OAuth 2.0)
  *   - name: Buildings
  *     description: Gestión de edificios
- *   - name: Modelos de datos
- *     description: Entidades ya modeladas en Sequelize
  */
 
 export {};
