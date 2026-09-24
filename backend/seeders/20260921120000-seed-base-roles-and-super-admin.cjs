@@ -71,8 +71,6 @@ module.exports = {
         [
           withDefaults(
             {
-              first_name: "Super",
-              last_name: "Admin",
               email,
               password_hash: passwordHash,
               status: "ACTIVE",
