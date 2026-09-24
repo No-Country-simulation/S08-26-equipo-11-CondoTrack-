@@ -21,8 +21,6 @@
  *     description: Gestión de unidades de los edificios
  *   - name: Residents
  *     description: Vinculación y consulta de residentes de una unidad
- *   - name: Modelos de datos
- *     description: Entidades ya modeladas en Sequelize
  */
 
 export {};
