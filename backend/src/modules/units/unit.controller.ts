@@ -2,8 +2,8 @@ import { RequestHandler } from "express";
 
 import AppError from "../../utils/AppError.js";
 import catchAsync from "../../utils/catchAsync.js";
-import { validateCreateUnitDto } from "./create-unit.dto.js";
-import { validateListUnitsDto } from "./list-units.dto.js";
+import { validateCreateUnitDto } from "./dto/create-unit.dto.js";
+import { validateListUnitsDto } from "./dto/list-units.dto.js";
 import { UnitService } from "./unit.service.js";
 
 export class UnitController {

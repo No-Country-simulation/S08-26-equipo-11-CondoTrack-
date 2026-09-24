@@ -199,5 +199,222 @@
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
  */
+/**
+ * @openapi
+ * paths:
+ *   /api/units/{unitId}/residents:
+ *     post:
+ *       tags:
+ *         - Residents
+ *       summary: Vincular un usuario registrado como residente de una unidad
+ *       description: >
+ *         Busca una cuenta por email y crea un vínculo residencial activo con
+ *         la unidad. Asegura el rol RESIDENT en el edificio de la unidad y
+ *         registra la operación en audit_logs. Solo puede hacerlo un
+ *         SUPER_ADMIN o un ADMIN asignado a ese edificio.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: unitId
+ *           required: true
+ *           description: Identificador UUID de la unidad.
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - email
+ *               properties:
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *             example:
+ *               email: residente@ejemplo.com
+ *       responses:
+ *         '201':
+ *           description: Residente vinculado correctamente.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     type: object
+ *                     required:
+ *                       - unitId
+ *                       - userId
+ *                       - personId
+ *                       - relationshipType
+ *                       - startDate
+ *                       - endDate
+ *                     properties:
+ *                       unitId:
+ *                         type: string
+ *                         format: uuid
+ *                       userId:
+ *                         type: string
+ *                         format: uuid
+ *                       personId:
+ *                         type: string
+ *                         format: uuid
+ *                       relationshipType:
+ *                         type: string
+ *                         example: RESIDENT
+ *                       startDate:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *                       endDate:
+ *                         type: string
+ *                         format: date-time
+ *                         nullable: true
+ *         '400':
+ *           description: Email o identificador de unidad inválido.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '401':
+ *           description: Token ausente, inválido o expirado.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '403':
+ *           description: El usuario no administra el edificio de la unidad.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '404':
+ *           description: Unidad o usuario registrado no encontrado.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '409':
+ *           description: >
+ *             El usuario ya está vinculado a la unidad o su cuenta no tiene
+ *             una persona asociada.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *
+ *     get:
+ *       tags:
+ *         - Residents
+ *       summary: Listar residentes activos de una unidad
+ *       description: >
+ *         Devuelve los vínculos de tipo RESIDENT de la unidad cuya fecha de
+ *         finalización es nula. Requiere SUPER_ADMIN o ADMIN asignado al
+ *         edificio de la unidad.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: unitId
+ *           required: true
+ *           description: Identificador UUID de la unidad.
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       responses:
+ *         '200':
+ *           description: Residentes activos obtenidos correctamente.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       required:
+ *                         - unitId
+ *                         - personId
+ *                         - userId
+ *                         - email
+ *                         - firstName
+ *                         - lastName
+ *                         - relationshipType
+ *                         - startDate
+ *                         - endDate
+ *                       properties:
+ *                         unitId:
+ *                           type: string
+ *                           format: uuid
+ *                         personId:
+ *                           type: string
+ *                           format: uuid
+ *                         userId:
+ *                           type: string
+ *                           format: uuid
+ *                           nullable: true
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                           nullable: true
+ *                         firstName:
+ *                           type: string
+ *                           nullable: true
+ *                         lastName:
+ *                           type: string
+ *                           nullable: true
+ *                         relationshipType:
+ *                           type: string
+ *                           example: RESIDENT
+ *                         startDate:
+ *                           type: string
+ *                           format: date-time
+ *                           nullable: true
+ *                         endDate:
+ *                           type: string
+ *                           format: date-time
+ *                           nullable: true
+ *         '400':
+ *           description: Identificador de unidad inválido.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '401':
+ *           description: Token ausente, inválido o expirado.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '403':
+ *           description: El usuario no administra el edificio de la unidad.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '404':
+ *           description: Unidad no encontrada.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ */
 
 export {};

@@ -17,6 +17,10 @@
  *     description: Registro y autenticación (local y Google OAuth 2.0)
  *   - name: Buildings
  *     description: Gestión de edificios
+ *   - name: Units
+ *     description: Gestión de unidades de los edificios
+ *   - name: Residents
+ *     description: Vinculación y consulta de residentes de una unidad
  */
 
 export {};
