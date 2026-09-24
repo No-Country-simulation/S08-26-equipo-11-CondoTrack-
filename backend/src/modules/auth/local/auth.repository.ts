@@ -4,17 +4,23 @@ import { Role } from "../../roles/role.model.js";
 import { UserBuildingRole } from "../../users-buildings-roles/user-building-role.model.js";
 import { User } from "../../users/user.model.js";
 import { UserStatus } from "../../users/user.types.js";
+import { Person } from "../../people/people.model.js";
 
 export interface CreateUserRepositoryData {
-  firstName: string;
-  lastName: string;
+  personId: string;
   email: string;
-  documentType: string;
-  documentNumber: string;
-  phone: string;
   passwordHash: string;
   status: UserStatus;
   lastLoginAt: Date | null;
+}
+
+export interface CreatePersonRepositoryData {
+  firstName: string;
+  lastName: string;
+  documentType: string | null;
+  documentNumber: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface CreateUserBuildingRoleRepositoryData {
@@ -35,7 +41,7 @@ export class LocalAuthRepository {
     options: { includePasswordHash?: boolean } = {},
   ): Promise<User | null> {
     const attributes = options.includePasswordHash
-      ? ["id", "firstName", "lastName", "email", "passwordHash", "status"]
+      ? ["id", "email", "passwordHash", "status"]
       : ["id"];
 
     return User.findOne({
@@ -49,6 +55,13 @@ export class LocalAuthRepository {
     transaction: Transaction,
   ): Promise<User> {
     return User.create(data, { transaction });
+  }
+
+  createPerson(
+    data: CreatePersonRepositoryData,
+    transaction: Transaction,
+  ): Promise<Person> {
+    return Person.create(data, { transaction });
   }
 
   findRoleByName(name: string, transaction: Transaction): Promise<Role | null> {

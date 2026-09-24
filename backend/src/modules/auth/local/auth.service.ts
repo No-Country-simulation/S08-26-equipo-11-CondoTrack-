@@ -4,6 +4,7 @@ import { UniqueConstraintError } from "sequelize";
 import { sequelize } from "../../../database/database.js";
 import AppError from "../../../utils/AppError.js";
 import { RESIDENT_ROLE } from "../../roles/role.types.js";
+import { Person } from "../../people/people.model.js";
 import { signToken, JwtRole } from "../jwt.js";
 import { LoginUserDto } from "./login.dto.js";
 import { RegisterDto } from "./register.dto.js";
@@ -61,14 +62,22 @@ export class LocalAuthService {
           throw new AppError("El rol RESIDENT no está configurado", 500);
         }
 
-        const user = await this.authRepository.createUser(
+        const person = await this.authRepository.createPerson(
           {
             firstName: dto.firstName,
             lastName: dto.lastName,
-            email,
             documentType: dto.documentType,
             documentNumber: dto.documentNumber,
+            email,
             phone: dto.phone,
+          },
+          transaction,
+        );
+
+        const user = await this.authRepository.createUser(
+          {
+            personId: person.id,
+            email,
             passwordHash,
             status: "ACTIVE",
             lastLoginAt: null,
@@ -100,6 +109,10 @@ export class LocalAuthService {
         }
         throw error;
       });
+
+    await user.reload({
+      include: [{ model: Person, as: "person" }],
+    });
 
     const token = signToken({ sub: user.id });
 
