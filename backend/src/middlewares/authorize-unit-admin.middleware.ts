@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import { z } from "zod";
 
 import AppError from "../utils/AppError.js";
 import catchAsync from "../utils/catchAsync.js";
@@ -15,8 +16,11 @@ export const authorizeUnitAdmin: RequestHandler = catchAsync(
     const unitIdParam = req.params.unitId;
     const unitId = Array.isArray(unitIdParam) ? unitIdParam[0] : unitIdParam;
 
-    if (!unitId) {
-      throw new AppError("El identificador de la unidad es obligatorio", 400);
+    if (!unitId || !z.uuid().safeParse(unitId).success) {
+      throw new AppError(
+        "El identificador de la unidad debe ser un UUID válido",
+        400,
+      );
     }
 
     const unit = await Unit.findByPk(unitId);

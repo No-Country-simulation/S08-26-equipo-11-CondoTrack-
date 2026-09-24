@@ -26,9 +26,15 @@ export class ResidentRepository {
     return Role.findOne({ where: { name: "RESIDENT" } });
   }
 
-  findUserRole(userId: string, buildingId: string, roleId: string) {
+  findUserRole(
+    userId: string,
+    buildingId: string,
+    roleId: string,
+    transaction: Transaction,
+  ) {
     return UserBuildingRole.findOne({
       where: { userId, buildingId, roleId },
+      transaction,
     });
   }
 

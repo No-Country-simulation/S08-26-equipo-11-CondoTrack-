@@ -3,12 +3,16 @@ import { Router } from "express";
 import { authenticate } from "../../../middlewares/auth.middleware.js";
 import { authorizeUnitAdmin } from "../../../middlewares/authorize-unit-admin.middleware.js";
 import { ResidentController } from "./resident.controller.js";
+import { ResidentRepository } from "./resident.repository.js";
+import { ResidentService } from "./resident.service.js";
 
-export function createResidentRoutes(controller: ResidentController) {
-  const router = Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
-  router.post("/", authenticate, authorizeUnitAdmin, controller.link);
-  router.get("/", authenticate, authorizeUnitAdmin, controller.list);
+const residentRepository = new ResidentRepository();
+const residentService = new ResidentService(residentRepository);
+const residentController = new ResidentController(residentService);
 
-  return router;
-}
+router.post("/", authenticate, authorizeUnitAdmin, residentController.link);
+router.get("/", authenticate, authorizeUnitAdmin, residentController.list);
+
+export default router;

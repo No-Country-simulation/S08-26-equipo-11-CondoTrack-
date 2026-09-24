@@ -5,7 +5,7 @@ import catchAsync from "../../../utils/catchAsync.js";
 import { validateLinkResidentDto } from "./link-resident.dto.js";
 
 export interface ResidentServiceContract {
-  link(unitId: string, email: string): Promise<unknown>;
+  link(unitId: string, email: string, performedBy: string): Promise<unknown>;
   list(unitId: string): Promise<unknown[]>;
 }
 
@@ -20,7 +20,17 @@ export class ResidentController {
     }
 
     const { email } = validateLinkResidentDto(req.body);
-    const resident = await this.residentService.link(unit.id, email);
+    const performedBy = req.authenticatedUser?.id;
+
+    if (!performedBy) {
+      throw new AppError("No autorizado", 401);
+    }
+
+    const resident = await this.residentService.link(
+      unit.id,
+      email,
+      performedBy,
+    );
 
     res.status(201).json({
       success: true,
