@@ -147,6 +147,7 @@
  *       tags:
  *         - Auth
  *       summary: Obtener el usuario autenticado
+ *       description: Devuelve los datos del usuario identificado por el JWT, sus roles, edificios y unidades asignadas actualmente.
  *       security:
  *         - bearerAuth: []
  *       responses:
@@ -156,12 +157,22 @@
  *             application/json:
  *               schema:
  *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
  *                 properties:
  *                   success:
  *                     type: boolean
  *                     example: true
  *                   data:
  *                     type: object
+ *                     required:
+ *                       - id
+ *                       - email
+ *                       - status
+ *                       - roles
+ *                       - buildings
+ *                       - units
  *                     properties:
  *                       id:
  *                         type: string
@@ -196,9 +207,28 @@
  *                               type: string
  *                       units:
  *                         type: array
- *                         description: Unidades asignadas al usuario; actualmente no existe esa relación en main.
+ *                         description: Unidades vinculadas actualmente a la persona asociada al usuario. Puede estar vacío.
  *                         items:
  *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             buildingId:
+ *                               type: string
+ *                               format: uuid
+ *                             code:
+ *                               type: string
+ *                               example: 4B
+ *                             floor:
+ *                               type: integer
+ *                               example: 4
+ *                             unitType:
+ *                               type: string
+ *                               example: DEPARTMENT
+ *                             relationshipType:
+ *                               type: string
+ *                               description: Tipo de vínculo de la persona con la unidad
  *         '401':
  *           description: JWT ausente, inválido o expirado, o usuario inexistente
  *           content:
