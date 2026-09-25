@@ -5,8 +5,9 @@ export class BuildingRepository {
     return Building.create(data);
   }
 
-  listAll(): Promise<Building[]> {
+  listAll(includeInactive = false): Promise<Building[]> {
     return Building.findAll({
+      where: includeInactive ? undefined : { isActive: true },
       order: [["name", "ASC"]],
     });
   }

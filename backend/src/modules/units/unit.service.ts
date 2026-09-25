@@ -68,6 +68,7 @@ export class UnitService {
         floor: filters.floor,
         unitType: filters.unitType,
         isActive: filters.isActive,
+        includeInactive: filters.includeInactive,
       },
       filters.limit,
       offset,

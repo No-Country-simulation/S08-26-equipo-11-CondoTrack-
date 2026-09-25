@@ -17,6 +17,11 @@ const listUnitsSchema = z.object({
     .enum(["true", "false"])
     .transform((value) => value === "true")
     .optional(),
+
+  includeInactive: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .default(false),
 });
 
 export type ListUnitsDto = z.infer<typeof listUnitsSchema>;
