@@ -4,11 +4,11 @@
  *   /api/buildings:
  *     post:
  *       tags:
- *       - Buildings
- *       summary: Registrar un nuevo edificio
- *       description: Crea un edificio nuevo. Requiere autenticación y rol SUPER_ADMIN.
+ *         - Buildings
+ *       summary: Crear un edificio
+ *       description: Crea un nuevo edificio. Requiere autenticación mediante JWT y rol `SUPER_ADMIN`.
  *       security:
- *       - bearerAuth: []
+ *         - bearerAuth: []
  *       requestBody:
  *         required: true
  *         content:
@@ -26,11 +26,14 @@
  *               description: Edificio residencial.
  *       responses:
  *         '201':
- *           description: Edificio creado correctamente.
+ *           description: Edificio creado correctamente
  *           content:
  *             application/json:
  *               schema:
  *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
  *                 properties:
  *                   success:
  *                     type: boolean
@@ -38,23 +41,122 @@
  *                   data:
  *                     $ref: '#/components/schemas/Building'
  *         '400':
- *           description: Datos inválidos o campos obligatorios faltantes.
+ *           description: Error de validación en los datos enviados
  *           content:
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
+ *               example:
+ *                 success: false
+ *                 message: numberOfFloors debe ser mayor a 0
  *         '401':
- *           description: Token ausente, inválido o expirado.
+ *           description: JWT ausente, inválido o expirado
  *           content:
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
  *         '403':
- *           description: El usuario no posee el rol SUPER_ADMIN.
+ *           description: El usuario autenticado no tiene rol SUPER_ADMIN
  *           content:
  *             application/json:
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
+ *
+ *     get:
+ *       tags:
+ *         - Buildings
+ *       summary: Listar edificios
+ *       description: Devuelve todos los edificios ordenados alfabéticamente por nombre. Requiere autenticación mediante JWT y rol `SUPER_ADMIN` o `ADMIN`.
+ *       security:
+ *         - bearerAuth: []
+ *       responses:
+ *         '200':
+ *           description: Lista de edificios obtenida correctamente
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     type: array
+ *                     items:
+ *                       $ref: '#/components/schemas/Building'
+ *         '401':
+ *           description: JWT ausente, inválido o expirado
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '403':
+ *           description: El usuario autenticado no tiene rol SUPER_ADMIN o ADMIN
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ */
+
+/**
+ * @openapi
+ * paths:
+ *   /api/buildings/{id}:
+ *     get:
+ *       tags:
+ *         - Buildings
+ *       summary: Obtener un edificio por ID
+ *       description: Devuelve los datos de un edificio específico. Requiere autenticación mediante JWT y rol `SUPER_ADMIN` o `ADMIN`.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: id
+ *           required: true
+ *           description: ID del edificio
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       responses:
+ *         '200':
+ *           description: Edificio encontrado correctamente
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 required:
+ *                   - success
+ *                   - data
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     $ref: '#/components/schemas/Building'
+ *         '401':
+ *           description: JWT ausente, inválido o expirado
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '403':
+ *           description: El usuario autenticado no tiene rol SUPER_ADMIN o ADMIN
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '404':
+ *           description: Edificio no encontrado
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *               example:
+ *                 success: false
+ *                 message: Edificio no encontrado
  */
 
 export {};
