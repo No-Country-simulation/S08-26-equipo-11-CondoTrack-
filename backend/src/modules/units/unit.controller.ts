@@ -51,4 +51,21 @@ export class UnitController {
       pagination: result.pagination,
     });
   });
+
+  getById: RequestHandler = catchAsync(async (req, res) => {
+    const unitIdParam = req.params.unitId;
+
+    const unitId = Array.isArray(unitIdParam) ? unitIdParam[0] : unitIdParam;
+
+    if (!unitId) {
+      throw new AppError("El identificador de la unidad es obligatorio", 400);
+    }
+
+    const unit = await this.unitService.getById(unitId);
+
+    res.status(200).json({
+      success: true,
+      data: unit,
+    });
+  });
 }

@@ -6,6 +6,7 @@ import {
   countActiveUnitsByBuilding,
   createUnit,
   findUnitByCode,
+  getUnitById,
   getUnitsByBuilding,
 } from "./unit.repository.js";
 
@@ -50,6 +51,16 @@ export class UnitService {
       description: dto.description ?? null,
       isActive: true,
     });
+  }
+
+  async getById(id: string) {
+    const unit = await getUnitById(id);
+
+    if (!unit) {
+      throw new AppError("Unidad no encontrada", 404);
+    }
+
+    return unit;
   }
 
   async listByBuilding(buildingId: string, filters: ListUnitsDto) {
