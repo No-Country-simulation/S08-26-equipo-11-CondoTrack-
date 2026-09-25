@@ -137,6 +137,22 @@ export const authorizeRoles = (
   });
 };
 
+//para que las rutas permitan incluir usuaros inactivos condicionalmente
+export const authorizeRolesForIncludeInactive = (
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  const authorize = authorizeRoles(...allowedRoles);
+
+  return (req, res, next) => {
+    if (req.query.includeInactive === "true") {
+      authorize(req, res, next);
+      return;
+    }
+
+    next();
+  };
+};
+
 export const authorizeBuildingRoles = (
   ...allowedRoles: SystemRole[]
 ): RequestHandler => {

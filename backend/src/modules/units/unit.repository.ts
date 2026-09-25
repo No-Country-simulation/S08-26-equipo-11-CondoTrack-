@@ -9,6 +9,7 @@ export interface UnitListFilters {
   floor?: number;
   unitType?: string;
   isActive?: boolean;
+  includeInactive?: boolean;
 }
 
 export const createUnit = async (
@@ -66,6 +67,8 @@ export const getUnitsByBuilding = async (
 
   if (filters.isActive !== undefined) {
     where.isActive = filters.isActive;
+  } else if (!filters.includeInactive) {
+    where.isActive = true;
   }
 
   return Unit.findAndCountAll({

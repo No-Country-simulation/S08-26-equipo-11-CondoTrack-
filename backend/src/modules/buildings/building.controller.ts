@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 
 import catchAsync from "../../utils/catchAsync.js";
 import { validateCreateBuildingDto } from "./create-building.dto.js";
+import { validateListBuildingsDto } from "./list-buildings.dto.js";
 import { BuildingService } from "./building.service.js";
 
 export class BuildingController {
@@ -18,8 +19,9 @@ export class BuildingController {
     });
   });
 
-  list: RequestHandler = catchAsync(async (_req, res) => {
-    const buildings = await this.buildingService.list();
+  list: RequestHandler = catchAsync(async (req, res) => {
+    const filters = validateListBuildingsDto(req.query);
+    const buildings = await this.buildingService.list(filters.includeInactive);
 
     res.status(200).json({
       success: true,

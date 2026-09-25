@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   authenticate,
   authorizeRoles,
+  authorizeRolesForIncludeInactive,
 } from "../../middlewares/auth.middleware.js";
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "../roles/role.types.js";
 import unitRoutes from "../units/unit.routes.js";
@@ -27,6 +28,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
+  authorizeRolesForIncludeInactive(SUPER_ADMIN_ROLE), //middleware para permitir que solo los admins incluyan cosas inactivas
   buildingController.list,
 );
 

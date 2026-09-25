@@ -84,8 +84,9 @@
  *         - Units
  *       summary: Listar las unidades de un edificio
  *       description: >
- *         Devuelve las unidades pertenecientes a un edificio. Requiere rol
- *         SUPER_ADMIN o ADMIN asignado al edificio indicado.
+ *         Devuelve las unidades pertenecientes a un edificio. Por defecto incluye
+ *         únicamente unidades activas. Requiere rol SUPER_ADMIN o ADMIN asignado
+ *         al edificio indicado.
  *       security:
  *         - bearerAuth: []
  *       parameters:
@@ -140,6 +141,16 @@
  *           description: Filtro por estado de la unidad.
  *           schema:
  *             type: boolean
+ *         - in: query
+ *           name: includeInactive
+ *           required: false
+ *           description: >
+ *             Incluye unidades activas e inactivas cuando es `true`. Solo puede
+ *             utilizarse por usuarios con rol `SUPER_ADMIN` o `ADMIN` asignado
+ *             al edificio indicado.
+ *           schema:
+ *             type: boolean
+ *             default: false
  *       responses:
  *         '200':
  *           description: Unidades obtenidas correctamente.
@@ -187,7 +198,8 @@
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
  *         '403':
- *           description: El usuario no tiene permisos sobre el edificio.
+ *           description: >
+ *             El usuario no tiene rol SUPER_ADMIN ni rol ADMIN asignado al edificio.
  *           content:
  *             application/json:
  *               schema:

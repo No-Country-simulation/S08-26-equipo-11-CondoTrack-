@@ -66,9 +66,22 @@
  *       tags:
  *         - Buildings
  *       summary: Listar edificios
- *       description: Devuelve todos los edificios ordenados alfabéticamente por nombre. Requiere autenticación mediante JWT y rol `SUPER_ADMIN` o `ADMIN`.
+ *       description: >
+ *         Devuelve los edificios ordenados alfabéticamente por nombre. Por defecto
+ *         incluye únicamente edificios activos. Requiere autenticación mediante JWT
+ *         y rol `SUPER_ADMIN` o `ADMIN`.
  *       security:
  *         - bearerAuth: []
+ *       parameters:
+ *         - in: query
+ *           name: includeInactive
+ *           required: false
+ *           description: >
+ *             Incluye edificios activos e inactivos cuando es `true`. Solo puede
+ *             utilizarse por usuarios con rol `SUPER_ADMIN`.
+ *           schema:
+ *             type: boolean
+ *             default: false
  *       responses:
  *         '200':
  *           description: Lista de edificios obtenida correctamente
@@ -87,6 +100,12 @@
  *                     type: array
  *                     items:
  *                       $ref: '#/components/schemas/Building'
+ *         '400':
+ *           description: El valor de includeInactive no es boolean
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
  *         '401':
  *           description: JWT ausente, inválido o expirado
  *           content:
@@ -94,7 +113,9 @@
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
  *         '403':
- *           description: El usuario autenticado no tiene rol SUPER_ADMIN o ADMIN
+ *           description: >
+ *             El usuario no tiene rol SUPER_ADMIN o ADMIN, o intenta incluir
+ *             edificios inactivos sin rol SUPER_ADMIN.
  *           content:
  *             application/json:
  *               schema:
