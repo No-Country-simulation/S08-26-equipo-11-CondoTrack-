@@ -1,6 +1,8 @@
 import { Op, WhereOptions } from "sequelize";
 
 import { Unit, UnitAttributes, UnitCreationAttributes } from "./unit.model.js";
+import { Person } from "../people/people.model.js";
+import { UnitPeople } from "../unit-people/unit-people.model.js";
 
 export interface UnitListFilters {
   code?: string;
@@ -73,6 +75,32 @@ export const getUnitsByBuilding = async (
     order: [
       ["floor", "ASC"],
       ["code", "ASC"],
+    ],
+  });
+};
+
+export const getUnitById = async (id: string): Promise<Unit | null> => {
+  return Unit.findByPk(id, {
+    include: [
+      {
+        model: UnitPeople,
+        as: "unitPeople",
+        include: [
+          {
+            model: Person,
+            as: "person",
+            attributes: [
+              "id",
+              "firstName",
+              "lastName",
+              "documentType",
+              "documentNumber",
+              "email",
+              "phone",
+            ],
+          },
+        ],
+      },
     ],
   });
 };

@@ -202,6 +202,128 @@
 /**
  * @openapi
  * paths:
+ *   /api/units/{unitId}:
+ *     get:
+ *       tags:
+ *         - Units
+ *       summary: Obtener el detalle de una unidad
+ *       description: >
+ *         Devuelve los datos de una unidad específica junto con las personas
+ *         vinculadas mediante unit_people. Solo puede acceder un SUPER_ADMIN
+ *         o un ADMIN asignado al edificio al que pertenece la unidad.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: unitId
+ *           required: true
+ *           description: Identificador UUID de la unidad.
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       responses:
+ *         '200':
+ *           description: Detalle de la unidad obtenido correctamente.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       buildingId:
+ *                         type: string
+ *                         format: uuid
+ *                       code:
+ *                         type: string
+ *                         example: "4B"
+ *                       floor:
+ *                         type: integer
+ *                         example: 4
+ *                       unitType:
+ *                         type: string
+ *                         example: DEPARTMENT
+ *                       description:
+ *                         type: string
+ *                         nullable: true
+ *                       isActive:
+ *                         type: boolean
+ *                       unitPeople:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               format: uuid
+ *                             relationshipType:
+ *                               type: string
+ *                               example: RESIDENT
+ *                             startDate:
+ *                               type: string
+ *                               format: date-time
+ *                               nullable: true
+ *                             endDate:
+ *                               type: string
+ *                               format: date-time
+ *                               nullable: true
+ *                             person:
+ *                               type: object
+ *                               properties:
+ *                                 id:
+ *                                   type: string
+ *                                   format: uuid
+ *                                 firstName:
+ *                                   type: string
+ *                                 lastName:
+ *                                   type: string
+ *                                 documentType:
+ *                                   type: string
+ *                                   nullable: true
+ *                                 documentNumber:
+ *                                   type: string
+ *                                   nullable: true
+ *                                 email:
+ *                                   type: string
+ *                                   nullable: true
+ *                                 phone:
+ *                                   type: string
+ *                                   nullable: true
+ *         '400':
+ *           description: El identificador de la unidad no es un UUID válido.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '401':
+ *           description: Token ausente, inválido o expirado.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '403':
+ *           description: El usuario no tiene permisos para consultar la unidad.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ *         '404':
+ *           description: Unidad no encontrada.
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 $ref: '#/components/schemas/ErrorResponse'
+ */
+/**
+ * @openapi
+ * paths:
  *   /api/units/{unitId}/residents:
  *     post:
  *       tags:
