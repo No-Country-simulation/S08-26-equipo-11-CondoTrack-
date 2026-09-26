@@ -3,8 +3,59 @@ import { UniqueConstraintError } from "sequelize";
 import { sequelize } from "../../../database/database.js";
 import AppError from "../../../utils/AppError.js";
 import { AuditLog } from "../../audit/audit.model.js";
+import { UnitPeople } from "../../unit-people/unit-people.model.js";
 import { Unit } from "../unit.model.js";
-import { ResidentRepository } from "./resident.repository.js";
+import {
+  RESIDENT_RELATIONSHIP_TYPE,
+  ResidentRepository,
+} from "./resident.repository.js";
+
+export interface ResidentView {
+  unitId: string;
+  personId: string;
+  userId: string | null;
+  fullName: string | null;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  relationshipType: string;
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
+type ResidentLink = UnitPeople & { get: (key: string) => unknown };
+
+/** Mapeo unico para POST y GET: ambos exponen la misma vista de un residente. */
+function toResidentView(link: ResidentLink): ResidentView {
+  const person = link.get("person") as
+    | {
+        firstName: string;
+        lastName: string;
+        email: string | null;
+        get: (key: "user") => { id: string; email: string } | null;
+      }
+    | null
+    | undefined;
+
+  const user = person?.get("user") ?? null;
+  const firstName = person?.firstName ?? null;
+  const lastName = person?.lastName ?? null;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+  return {
+    unitId: link.unitId,
+    personId: link.personId,
+    userId: user?.id ?? null,
+    fullName: fullName.length > 0 ? fullName : null,
+    // el email de contacto es el de la persona; si no tiene, el de su cuenta
+    email: person?.email ?? user?.email ?? null,
+    firstName,
+    lastName,
+    relationshipType: link.relationshipType,
+    startDate: link.startDate,
+    endDate: link.endDate,
+  };
+}
 
 export class ResidentService {
   constructor(private readonly repository: ResidentRepository) {}
@@ -77,7 +128,7 @@ export class ResidentService {
               userId: user.id,
               personId,
               unitId,
-              relationshipType: "RESIDENT",
+              relationshipType: RESIDENT_RELATIONSHIP_TYPE,
             },
             ipAddress: null,
           },
@@ -87,14 +138,7 @@ export class ResidentService {
         return newLink;
       });
 
-      return {
-        unitId: link.unitId,
-        userId: user.id,
-        personId: link.personId,
-        relationshipType: link.relationshipType,
-        startDate: link.startDate,
-        endDate: link.endDate,
-      };
+      return toResidentView(link);
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         const constraint = (error.parent as { constraint?: string } | undefined)
@@ -112,29 +156,6 @@ export class ResidentService {
   async list(unitId: string) {
     const links = await this.repository.listActive(unitId);
 
-    return links.map((link) => {
-      const person = link.get("person") as
-        | {
-            id: string;
-            firstName: string;
-            lastName: string;
-            get(key: "user"): { id: string; email: string } | null;
-          }
-        | undefined;
-
-      const user = person?.get("user") ?? null;
-
-      return {
-        unitId: link.unitId,
-        personId: link.personId,
-        userId: user?.id ?? null,
-        email: user?.email ?? null,
-        firstName: person?.firstName ?? null,
-        lastName: person?.lastName ?? null,
-        relationshipType: link.relationshipType,
-        startDate: link.startDate,
-        endDate: link.endDate,
-      };
-    });
+    return links.map((link) => toResidentView(link as ResidentLink));
   }
 }
