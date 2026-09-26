@@ -147,6 +147,8 @@
  *                 email:
  *                   type: string
  *                   format: email
+ *                 status:
+ *                   $ref: '#/components/schemas/UserStatus'
  *                 roles:
  *                   type: array
  *                   items:

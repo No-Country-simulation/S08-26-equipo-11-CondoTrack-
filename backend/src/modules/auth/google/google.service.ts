@@ -1,19 +1,18 @@
 import { User } from "../../users/user.model.js";
 import { signToken } from "../jwt.js";
 import { GoogleUserData } from "./google.types.js";
+import { LocalAuthRepository } from "../local/auth.repository.js";
 
-export async function authenticateWithGoogle(
-  googleUser: GoogleUserData,
-) {
+export async function authenticateWithGoogle(googleUser: GoogleUserData) {
   let user = await User.findOne({
     where: {
       email: googleUser.email,
     },
+    attributes: ["id", "email", "status", "googleId", "lastLoginAt"],
   });
 
   if (!user) {
     user = await User.create({
-      //los datos civiles (firstName/lastName/documentType/...) viven en Person (people), no en User
       email: googleUser.email,
       passwordHash: null,
       googleId: googleUser.googleId,
@@ -27,12 +26,16 @@ export async function authenticateWithGoogle(
     await user.save();
   }
 
-  const token = signToken({
-    sub: user.id,
-  });
+  const roles = await new LocalAuthRepository().findUserRoles(user.id);
+  const token = signToken({ sub: user.id, roles });
 
   return {
-    user,
     token,
+    user: {
+      id: user.id,
+      email: user.email,
+      status: user.status,
+      roles,
+    },
   };
 }

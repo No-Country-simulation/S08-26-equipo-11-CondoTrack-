@@ -126,16 +126,7 @@
  *           content:
  *             application/json:
  *               schema:
- *                 type: object
- *                 properties:
- *                   message:
- *                     type: string
- *                     example: Autenticación con Google exitosa
- *                   token:
- *                     type: string
- *                     description: JWT firmado con el id del usuario (`sub`)
- *                   user:
- *                     $ref: '#/components/schemas/User'
+ *                 $ref: '#/components/schemas/LoginResponse'
  *         '401':
  *           description: Passport no pudo autenticar al usuario con Google (email ausente en el perfil, etc.)
  */
