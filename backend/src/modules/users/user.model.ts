@@ -31,14 +31,6 @@ export class User
   @Column(DataType.UUID)
   declare id: string;
 
-  // @AllowNull(false)
-  // @Column(DataType.STRING(100))
-  // declare firstName: string;
-
-  // @AllowNull(false)
-  // @Column(DataType.STRING(100))
-  // declare lastName: string;
-
   @AllowNull(true)
   @Unique
   @ForeignKey(() => People)
@@ -47,23 +39,10 @@ export class User
 
   declare person?: People | null;
 
-  // @AllowNull(true)
-  // @Column(DataType.STRING(30))
-  // declare documentType: string | null;
-
-  // @AllowNull(true)
-  // @Unique
-  // @Column(DataType.STRING(50))
-  // declare documentNumber: string | null;
-
   @AllowNull(false)
   @Unique
   @Column(DataType.STRING(150))
   declare email: string;
-
-  // @AllowNull(true)
-  // @Column(DataType.STRING(30))
-  // declare phone: string | null;
 
   @AllowNull(true)
   @Column(DataType.STRING(255))
