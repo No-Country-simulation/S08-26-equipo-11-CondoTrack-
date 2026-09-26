@@ -23,33 +23,39 @@ function withDefaults(record, Sequelize) {
 const BUILDING_NORTH_ID = detUuid("00000000", 2);
 const BUILDING_SOUTH_ID = detUuid("00000000", 3);
 
+//Unico relationship_type valido para los vinculos de ocupacion que expone
+//GET/POST /api/units/:unitId/residents. Antes este seeder usaba OWNER/TENANT
+//mientras el modulo de residentes filtraba por RESIDENT, por lo que el listado
+//siempre era vacio (CT-S4-FIX-01).
+const RESIDENT_RELATIONSHIP_TYPE = "RESIDENT";
+
 //los ids de edificio/unidad los define el seeder 20260924120000-seed-buildings-units.cjs
 //Torre Norte: unidades 1-18, Torre Sur: unidades 19-36
 const PEOPLE = [
-  { firstName: "Sofia", lastName: "Rodriguez", documentType: "DNI", documentNumber: "40201512", email: "sofia.rodriguez@condotrack.test", phone: "+54 9 11 5555-0001", unit: 1, relationshipType: "OWNER", account: true },
-  { firstName: "Martin", lastName: "Alarcon", documentType: "DNI", documentNumber: "40123456", email: "martin.alarcon@condotrack.test", phone: "+54 9 11 5555-0002", unit: 2, relationshipType: "TENANT", account: true },
-  { firstName: "Valentina", lastName: "Torres", documentType: "DNI", documentNumber: "40012065", email: "valentina.torres@condotrack.test", phone: "+54 9 11 5555-0003", unit: 3, relationshipType: "OWNER", account: true },
-  { firstName: "Thiago", lastName: "Benítez", documentType: "DNI", documentNumber: "39987444", email: "thiago.benitez@condotrack.test", phone: "+54 9 11 5555-0004", unit: 4, relationshipType: "TENANT", account: true },
-  { firstName: "Camila", lastName: "Ríos", documentType: "DNI", documentNumber: "39554218", email: "camila.rios@condotrack.test", phone: "+54 9 11 5555-0005", unit: 19, relationshipType: "OWNER", account: true },
-  { firstName: "Joaquín", lastName: "Medina", documentType: "DNI", documentNumber: "39874120", email: "joaquin.medina@condotrack.test", phone: "+54 9 11 5555-0006", unit: 20, relationshipType: "TENANT", account: true },
-  { firstName: "Lucía", lastName: "Cabrera", documentType: "DNI", documentNumber: "39044556", email: "lucia.cabrera@condotrack.test", phone: "+54 9 11 5555-0007", unit: 21, relationshipType: "OWNER", account: true },
-  { firstName: "Agustín", lastName: "Peralta", documentType: "DNI", documentNumber: "39411209", email: "agustin.peralta@condotrack.test", phone: "+54 9 11 5555-0008", unit: 22, relationshipType: "TENANT", account: true },
-  { firstName: "Florencia", lastName: "Aguirre", documentType: "DNI", documentNumber: "38854001", email: "florencia.aguirre@condotrack.test", phone: "+54 9 11 5555-0009", unit: 5, relationshipType: "OWNER", account: false },
-  { firstName: "Nicolás", lastName: "Sosa", documentType: "DNI", documentNumber: "38662217", email: "nicolas.sosa@condotrack.test", phone: "+54 9 11 5555-0010", unit: 6, relationshipType: "TENANT", account: false },
-  { firstName: "Paula", lastName: "Navarro", documentType: "DNI", documentNumber: "38409183", email: "paula.navarro@condotrack.test", phone: "+54 9 11 5555-0011", unit: 7, relationshipType: "OWNER", account: false },
-  { firstName: "Mateo", lastName: "Herrera", documentType: "DNI", documentNumber: "38255340", email: "mateo.herrera@condotrack.test", phone: "+54 9 11 5555-0012", unit: 8, relationshipType: "TENANT", account: false },
-  { firstName: "Julieta", lastName: "Acosta", documentType: "DNI", documentNumber: "37701887", email: "julieta.acosta@condotrack.test", phone: "+54 9 11 5555-0013", unit: 9, relationshipType: "OWNER", account: false },
-  { firstName: "Bruno", lastName: "Domínguez", documentType: "DNI", documentNumber: "37548210", email: "bruno.dominguez@condotrack.test", phone: "+54 9 11 5555-0014", unit: 10, relationshipType: "TENANT", account: false },
-  { firstName: "Renata", lastName: "Paz", documentType: "DNI", documentNumber: "37129014", email: "renata.paz@condotrack.test", phone: "+54 9 11 5555-0015", unit: 11, relationshipType: "OWNER", account: false },
-  { firstName: "Facundo", lastName: "Farías", documentType: "DNI", documentNumber: "36984532", email: "facundo.farias@condotrack.test", phone: "+54 9 11 5555-0016", unit: 12, relationshipType: "TENANT", account: false },
-  { firstName: "Melina", lastName: "Roldán", documentType: "DNI", documentNumber: "35877461", email: "melina.roldan@condotrack.test", phone: "+54 9 11 5555-0017", unit: 13, relationshipType: "OWNER", account: false },
-  { firstName: "Iván", lastName: "Correa", documentType: "DNI", documentNumber: "35512096", email: "ivan.correa@condotrack.test", phone: "+54 9 11 5555-0018", unit: 14, relationshipType: "TENANT", account: false },
-  { firstName: "Abril", lastName: "Méndez", documentType: "DNI", documentNumber: "35226841", email: "abril.mendez@condotrack.test", phone: "+54 9 11 5555-0019", unit: 15, relationshipType: "OWNER", account: false },
-  { firstName: "Santiago", lastName: "Villalba", documentType: "DNI", documentNumber: "34973306", email: "santiago.villalba@condotrack.test", phone: "+54 9 11 5555-0020", unit: 16, relationshipType: "TENANT", account: false },
-  { firstName: "Clara", lastName: "Bustos", documentType: "DNI", documentNumber: "34490172", email: "clara.bustos@condotrack.test", phone: "+54 9 11 5555-0021", unit: 23, relationshipType: "OWNER", account: false },
-  { firstName: "Tomás", lastName: "Giménez", documentType: "DNI", documentNumber: "34218055", email: "tomas.gimenez@condotrack.test", phone: "+54 9 11 5555-0022", unit: 24, relationshipType: "TENANT", account: false },
-  { firstName: "Antonella", lastName: "Lucero", documentType: "DNI", documentNumber: "33944580", email: "antonella.lucero@condotrack.test", phone: "+54 9 11 5555-0023", unit: 25, relationshipType: "OWNER", account: false },
-  { firstName: "Bautista", lastName: "Quiroga", documentType: "DNI", documentNumber: "33520144", email: "bautista.quiroga@condotrack.test", phone: "+54 9 11 5555-0024", unit: 26, relationshipType: "TENANT", account: false },
+  { firstName: "Sofia", lastName: "Rodriguez", documentType: "DNI", documentNumber: "40201512", email: "sofia.rodriguez@condotrack.test", phone: "+54 9 11 5555-0001", unit: 1, account: true },
+  { firstName: "Martin", lastName: "Alarcon", documentType: "DNI", documentNumber: "40123456", email: "martin.alarcon@condotrack.test", phone: "+54 9 11 5555-0002", unit: 2, account: true },
+  { firstName: "Valentina", lastName: "Torres", documentType: "DNI", documentNumber: "40012065", email: "valentina.torres@condotrack.test", phone: "+54 9 11 5555-0003", unit: 3, account: true },
+  { firstName: "Thiago", lastName: "Benítez", documentType: "DNI", documentNumber: "39987444", email: "thiago.benitez@condotrack.test", phone: "+54 9 11 5555-0004", unit: 4, account: true },
+  { firstName: "Camila", lastName: "Ríos", documentType: "DNI", documentNumber: "39554218", email: "camila.rios@condotrack.test", phone: "+54 9 11 5555-0005", unit: 19, account: true },
+  { firstName: "Joaquín", lastName: "Medina", documentType: "DNI", documentNumber: "39874120", email: "joaquin.medina@condotrack.test", phone: "+54 9 11 5555-0006", unit: 20, account: true },
+  { firstName: "Lucía", lastName: "Cabrera", documentType: "DNI", documentNumber: "39044556", email: "lucia.cabrera@condotrack.test", phone: "+54 9 11 5555-0007", unit: 21, account: true },
+  { firstName: "Agustín", lastName: "Peralta", documentType: "DNI", documentNumber: "39411209", email: "agustin.peralta@condotrack.test", phone: "+54 9 11 5555-0008", unit: 22, account: true },
+  { firstName: "Florencia", lastName: "Aguirre", documentType: "DNI", documentNumber: "38854001", email: "florencia.aguirre@condotrack.test", phone: "+54 9 11 5555-0009", unit: 5, account: false },
+  { firstName: "Nicolás", lastName: "Sosa", documentType: "DNI", documentNumber: "38662217", email: "nicolas.sosa@condotrack.test", phone: "+54 9 11 5555-0010", unit: 6, account: false },
+  { firstName: "Paula", lastName: "Navarro", documentType: "DNI", documentNumber: "38409183", email: "paula.navarro@condotrack.test", phone: "+54 9 11 5555-0011", unit: 7, account: false },
+  { firstName: "Mateo", lastName: "Herrera", documentType: "DNI", documentNumber: "38255340", email: "mateo.herrera@condotrack.test", phone: "+54 9 11 5555-0012", unit: 8, account: false },
+  { firstName: "Julieta", lastName: "Acosta", documentType: "DNI", documentNumber: "37701887", email: "julieta.acosta@condotrack.test", phone: "+54 9 11 5555-0013", unit: 9, account: false },
+  { firstName: "Bruno", lastName: "Domínguez", documentType: "DNI", documentNumber: "37548210", email: "bruno.dominguez@condotrack.test", phone: "+54 9 11 5555-0014", unit: 10, account: false },
+  { firstName: "Renata", lastName: "Paz", documentType: "DNI", documentNumber: "37129014", email: "renata.paz@condotrack.test", phone: "+54 9 11 5555-0015", unit: 11, account: false },
+  { firstName: "Facundo", lastName: "Farías", documentType: "DNI", documentNumber: "36984532", email: "facundo.farias@condotrack.test", phone: "+54 9 11 5555-0016", unit: 12, account: false },
+  { firstName: "Melina", lastName: "Roldán", documentType: "DNI", documentNumber: "35877461", email: "melina.roldan@condotrack.test", phone: "+54 9 11 5555-0017", unit: 13, account: false },
+  { firstName: "Iván", lastName: "Correa", documentType: "DNI", documentNumber: "35512096", email: "ivan.correa@condotrack.test", phone: "+54 9 11 5555-0018", unit: 14, account: false },
+  { firstName: "Abril", lastName: "Méndez", documentType: "DNI", documentNumber: "35226841", email: "abril.mendez@condotrack.test", phone: "+54 9 11 5555-0019", unit: 15, account: false },
+  { firstName: "Santiago", lastName: "Villalba", documentType: "DNI", documentNumber: "34973306", email: "santiago.villalba@condotrack.test", phone: "+54 9 11 5555-0020", unit: 16, account: false },
+  { firstName: "Clara", lastName: "Bustos", documentType: "DNI", documentNumber: "34490172", email: "clara.bustos@condotrack.test", phone: "+54 9 11 5555-0021", unit: 23, account: false },
+  { firstName: "Tomás", lastName: "Giménez", documentType: "DNI", documentNumber: "34218055", email: "tomas.gimenez@condotrack.test", phone: "+54 9 11 5555-0022", unit: 24, account: false },
+  { firstName: "Antonella", lastName: "Lucero", documentType: "DNI", documentNumber: "33944580", email: "antonella.lucero@condotrack.test", phone: "+54 9 11 5555-0023", unit: 25, account: false },
+  { firstName: "Bautista", lastName: "Quiroga", documentType: "DNI", documentNumber: "33520144", email: "bautista.quiroga@condotrack.test", phone: "+54 9 11 5555-0024", unit: 26, account: false },
 ];
 
 //personal de staff sin persona vinculada
@@ -172,7 +178,7 @@ module.exports = {
               id: detUuid("00000004", index + 1),
               unit_id: detUuid("00000001", person.unit),
               person_id: detUuid("00000002", index + 1),
-              relationship_type: person.relationshipType,
+              relationship_type: RESIDENT_RELATIONSHIP_TYPE,
               start_date: new Date("2024-02-01"),
               end_date: null,
             },

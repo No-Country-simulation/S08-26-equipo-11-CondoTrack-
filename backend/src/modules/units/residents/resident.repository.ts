@@ -1,10 +1,26 @@
-import { Transaction } from "sequelize";
+import { IncludeOptions, Transaction } from "sequelize";
 
 import { Person } from "../../people/people.model.js";
 import { Role } from "../../roles/role.model.js";
 import { UnitPeople } from "../../unit-people/unit-people.model.js";
 import { User } from "../../users/user.model.js";
 import { UserBuildingRole } from "../../users-buildings-roles/user-building-role.model.js";
+
+export const RESIDENT_RELATIONSHIP_TYPE = "RESIDENT";
+
+/// Proyeccion de persona + cuenta usada tanto al listar como al crear un vinculo
+const PERSON_WITH_USER_INCLUDE: IncludeOptions = {
+  model: Person,
+  as: "person",
+  attributes: ["id", "firstName", "lastName", "email"],
+  include: [
+    {
+      model: User,
+      as: "user",
+      attributes: ["id", "email"],
+    },
+  ],
+};
 
 export class ResidentRepository {
   findUserByEmail(email: string) {
@@ -16,7 +32,7 @@ export class ResidentRepository {
       where: {
         unitId,
         personId,
-        relationshipType: "RESIDENT",
+        relationshipType: RESIDENT_RELATIONSHIP_TYPE,
         endDate: null,
       },
     });
@@ -38,17 +54,19 @@ export class ResidentRepository {
     });
   }
 
-  createLink(unitId: string, personId: string, transaction: Transaction) {
-    return UnitPeople.create(
+  async createLink(unitId: string, personId: string, transaction: Transaction) {
+    const link = await UnitPeople.create(
       {
         unitId,
         personId,
-        relationshipType: "RESIDENT",
+        relationshipType: RESIDENT_RELATIONSHIP_TYPE,
         startDate: new Date(),
         endDate: null,
       },
       { transaction },
     );
+
+    return link.reload({ include: PERSON_WITH_USER_INCLUDE, transaction });
   }
 
   createUserRole(
@@ -67,23 +85,10 @@ export class ResidentRepository {
     const links = await UnitPeople.findAll({
       where: {
         unitId,
-        relationshipType: "RESIDENT",
+        relationshipType: RESIDENT_RELATIONSHIP_TYPE,
         endDate: null,
       },
-      include: [
-        {
-          model: Person,
-          as: "person",
-          attributes: ["id", "firstName", "lastName"],
-          include: [
-            {
-              model: User,
-              as: "user",
-              attributes: ["id", "email"],
-            },
-          ],
-        },
-      ],
+      include: [PERSON_WITH_USER_INCLUDE],
       order: [["startDate", "ASC"]],
     });
 

@@ -390,6 +390,8 @@
  *                       - unitId
  *                       - userId
  *                       - personId
+ *                       - fullName
+ *                       - email
  *                       - relationshipType
  *                       - startDate
  *                       - endDate
@@ -403,6 +405,26 @@
  *                       personId:
  *                         type: string
  *                         format: uuid
+ *                       fullName:
+ *                         type: string
+ *                         nullable: true
+ *                         description: >
+ *                           Nombre completo del residente, compuesto por
+ *                           firstName y lastName.
+ *                       email:
+ *                         type: string
+ *                         format: email
+ *                         nullable: true
+ *                         description: >
+ *                           Email de contacto del residente. Se toma de
+ *                           people.email y, si la persona no lo tiene, del
+ *                           email de la cuenta asociada.
+ *                       firstName:
+ *                         type: string
+ *                         nullable: true
+ *                       lastName:
+ *                         type: string
+ *                         nullable: true
  *                       relationshipType:
  *                         type: string
  *                         example: RESIDENT
@@ -453,8 +475,9 @@
  *       summary: Listar residentes activos de una unidad
  *       description: >
  *         Devuelve los vínculos de tipo RESIDENT de la unidad cuya fecha de
- *         finalización es nula. Requiere SUPER_ADMIN o ADMIN asignado al
- *         edificio de la unidad.
+ *         finalización es nula. Cada item incluye el nombre completo, el tipo
+ *         de relación y el email de contacto del residente. Requiere
+ *         SUPER_ADMIN o ADMIN asignado al edificio de la unidad.
  *       security:
  *         - bearerAuth: []
  *       parameters:
@@ -487,6 +510,7 @@
  *                         - unitId
  *                         - personId
  *                         - userId
+ *                         - fullName
  *                         - email
  *                         - firstName
  *                         - lastName
@@ -504,10 +528,20 @@
  *                           type: string
  *                           format: uuid
  *                           nullable: true
+ *                         fullName:
+ *                           type: string
+ *                           nullable: true
+ *                           description: >
+ *                             Nombre completo del residente, compuesto por
+ *                             firstName y lastName.
  *                         email:
  *                           type: string
  *                           format: email
  *                           nullable: true
+ *                           description: >
+ *                             Email de contacto del residente. Se toma de
+ *                             people.email y, si la persona no lo tiene, del
+ *                             email de la cuenta asociada.
  *                         firstName:
  *                           type: string
  *                           nullable: true
