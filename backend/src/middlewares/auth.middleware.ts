@@ -155,6 +155,16 @@ export const authorizeRolesForIncludeInactive = (
 
 export const authorizeBuildingRoles = (
   ...allowedRoles: SystemRole[]
+): RequestHandler => authorizeBuildingParam("buildingId", ...allowedRoles);
+
+/**
+ * Implementacion unica de la autorizacion por edificio. El nombre del parametro
+ * de ruta se recibe porque /buildings/:id y /buildings/:buildingId/units exponen
+ * el mismo concepto con nombres distintos.
+ */
+export const authorizeBuildingParam = (
+  paramName: string,
+  ...allowedRoles: SystemRole[]
 ): RequestHandler => {
   return catchAsync((req, res, next) => {
     const authUser = req.authenticatedUser;
@@ -163,21 +173,15 @@ export const authorizeBuildingRoles = (
       throw new AppError(UNAUTHORIZED_MESSAGE, 401);
     }
 
-    const buildingIdParam = req.params.buildingId;
+    const param = req.params[paramName];
 
-    const buildingId = Array.isArray(buildingIdParam)
-      ? buildingIdParam[0]
-      : buildingIdParam;
+    const buildingId = Array.isArray(param) ? param[0] : param;
 
     if (!buildingId) {
       throw new AppError("El identificador del edificio es obligatorio", 400);
     }
 
-    const isSuperAdmin = authUser.roles.some(
-      (role) => role.roleName === "SUPER_ADMIN",
-    );
-
-    if (isSuperAdmin) {
+    if (isSuperAdmin(authUser)) {
       next();
       return;
     }
@@ -194,4 +198,28 @@ export const authorizeBuildingRoles = (
 
     next();
   });
+};
+
+/** SUPER_ADMIN conserva alcance global sobre edificios. */
+export const isSuperAdmin = (authUser: AuthenticatedUser): boolean =>
+  authUser.roles.some((role) => role.roleName === "SUPER_ADMIN");
+
+/**
+ * Alcance de edificios del usuario autenticado, derivado de la misma identidad
+ * que usa authorizeBuildingParam para no tener dos estrategias de alcance.
+ * null significa "todos los edificios" (SUPER_ADMIN); un array vacio significa
+ * "ninguno", que es el caso de un ADMIN sin edificios asignados.
+ */
+export const resolveBuildingScope = (
+  authUser: AuthenticatedUser,
+): string[] | null => {
+  if (isSuperAdmin(authUser)) {
+    return null;
+  }
+
+  const buildingIds = authUser.roles
+    .map((role) => role.buildingId)
+    .filter((buildingId): buildingId is string => Boolean(buildingId));
+
+  return [...new Set(buildingIds)];
 };
