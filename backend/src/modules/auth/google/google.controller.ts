@@ -14,9 +14,8 @@ export async function googleCallback(
     const result = await authenticateWithGoogle(googleUser);
 
     res.status(200).json({
-      message: "Autenticación con Google exitosa",
-      token: result.token,
-      user: result.user,
+      success: true,
+      data: result,
     });
   } catch (error) {
     next(error);

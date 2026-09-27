@@ -34,6 +34,7 @@ export interface LoginResult {
   user: {
     id: string;
     email: string;
+    status: string;
     roles: JwtRole[];
   };
   token: string;
@@ -166,6 +167,7 @@ export class LocalAuthService {
       user: {
         id: user.id,
         email: user.email,
+        status: user.status,
         roles,
       },
       token,
