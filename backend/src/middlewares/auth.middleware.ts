@@ -67,7 +67,7 @@ export const authenticate: RequestHandler = catchAsync(
     //info del usuario, sin contraseña ni datos sensibles
     //firstName/lastName viven en people (Person), no en users
     const user = await User.findByPk(userId, {
-      attributes: ["id", "email"],
+      attributes: ["id", "email", "status"],
       include: [
         {
           model: Person,
@@ -81,7 +81,10 @@ export const authenticate: RequestHandler = catchAsync(
       throw new AppError(UNAUTHORIZED_MESSAGE, 401);
     }
 
-    //todos los roles del usuario
+    if (user.status !== "ACTIVE") {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
+    }
+
     const roleRows = await UserBuildingRole.findAll({
       where: { userId: user.id },
       attributes: ["roleId", "buildingId"],
