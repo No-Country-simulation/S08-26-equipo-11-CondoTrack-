@@ -10,8 +10,8 @@ export class BuildingService {
     return this.buildingRepository.create(dto);
   }
 
-  async list(includeInactive = false): Promise<Building[]> {
-    return this.buildingRepository.listAll(includeInactive);
+  async list(includeInactive = false, buildingIds: string[] | null = null): Promise<Building[]> {
+    return this.buildingRepository.listAll(includeInactive, buildingIds);
   }
 
   async getById(id: string): Promise<Building> {

@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticate,
+  authorizeBuildingParam,
   authorizeRoles,
   authorizeRolesForIncludeInactive,
 } from "../../middlewares/auth.middleware.js";
@@ -36,6 +37,8 @@ router.get(
   "/:id",
   authenticate,
   authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
+  //el alcance por edificio se valida contra el parametro :id de esta ruta
+  authorizeBuildingParam("id", SUPER_ADMIN_ROLE, ADMIN_ROLE),
   buildingController.getById,
 );
 
