@@ -23,6 +23,31 @@ const isMalformedJsonError = (err: any): boolean => {
 const friendlyError = (message: string, statusCode: number) =>
   new AppError(message, statusCode);
 
+//catalogo cerrado de violaciones de unicidad
+const UNIQUE_CONSTRAINT_MESSAGES = new Map<string, string>([
+  ["users_email_key", "El email ya está registrado"],
+  [
+    "units_building_id_code_unique",
+    "Ya existe una unidad con ese código en este edificio",
+  ],
+  [
+    "users_google_id_key",
+    "Esta cuenta de Google ya está vinculada a otro usuario",
+  ],
+]);
+
+const DEFAULT_UNIQUE_MESSAGE = "El recurso que intentas crear ya existe";
+
+//en PostgreSQL el nombre de la constraint llega en parent.constraint (23505)
+const uniqueConstraintMessage = (
+  err: SequelizeUniqueConstraintError,
+): string => {
+  const constraint =
+    (err.parent as { constraint?: string } | undefined)?.constraint ?? "";
+
+  return UNIQUE_CONSTRAINT_MESSAGES.get(constraint) ?? DEFAULT_UNIQUE_MESSAGE;
+};
+
 const errorHandler = (
   err: any,
   req: Request,
@@ -36,11 +61,12 @@ const errorHandler = (
 
   if (isMalformedJsonError(err)) {
     error = friendlyError("JSON inválido", 400);
+  } else if (err instanceof SequelizeUniqueConstraintError) {
+    // UniqueConstraintError hereda de ValidationError, asi que esta rama debe
+    // evaluarse ANTES que ValidationError o los 409 se convertian en 422.
+    error = friendlyError(uniqueConstraintMessage(err), 409);
   } else if (err instanceof SequelizeValidationError) {
     error = friendlyError(err.errors.map((e) => e.message).join(", "), 422);
-  } else if (err instanceof SequelizeUniqueConstraintError) {
-    // cubre unique violation (23505) -> 409
-    error = friendlyError(err.errors.map((e) => e.message).join(", "), 409);
   } else if (
     err instanceof SequelizeDatabaseError &&
     (err.parent as { code?: string }).code === "22P02"
