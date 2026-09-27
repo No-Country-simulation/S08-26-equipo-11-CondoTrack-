@@ -62,10 +62,6 @@ SEED_SUPER_ADMIN_EMAIL=superadmin@example.com
 SEED_SUPER_ADMIN_PASSWORD=una_contraseña_segura
 ```
 
-`GOOGLE_CALLBACK_URL` debe coincidir exactamente con la URI de redirección autorizada en Google Cloud. En un entorno desplegado, se debe utilizar la URL pública de ese entorno.
-
-Las variables `SEED_SUPER_ADMIN_EMAIL` y `SEED_SUPER_ADMIN_PASSWORD` se usan al ejecutar el seeder inicial. El archivo `.env` contiene secretos y no debe subirse al repositorio.
-
 ## Base de datos
 
 La configuración de Sequelize CLI se encuentra en `backend/config/config.cjs`. Las migraciones están en `backend/migrations/` y los seeders en `backend/seeders/`.
@@ -76,8 +72,6 @@ Desde la carpeta `backend`, ejecutar:
 npm run db:migrate
 npm run db:seed
 ```
-
-El seeder carga los roles del sistema y crea un usuario `SUPER_ADMIN` con las credenciales indicadas en las variables de entorno.
 
 ## Ejecución
 
@@ -115,18 +109,6 @@ Para llamar a un endpoint protegido, enviar el token en el encabezado:
 ```http
 Authorization: Bearer <token>
 ```
-
-El backend verifica el JWT y consulta los roles asignados al usuario. Los roles definidos son `SUPER_ADMIN`, `ADMIN`, `RECEPTION`, `MAINTENANCE` y `RESIDENT`. Las operaciones sobre unidades comprueban, además, que un usuario `ADMIN` esté asignado al edificio correspondiente; `SUPER_ADMIN` puede operar sobre cualquier edificio.
-
-## Endpoints principales
-
-| Método | Ruta                               | Función                                                        |
-| ------ | ---------------------------------- | -------------------------------------------------------------- |
-| `GET`  | `/`                                | Confirmar que la API está funcionando                          |
-| `GET`  | `/health`                          | Consultar el estado de la API y la conexión a la base de datos |
-| `POST` | `/api/buildings`                   | Crear un edificio; requiere `SUPER_ADMIN`                      |
-| `POST` | `/api/buildings/:buildingId/units` | Crear una unidad en un edificio                                |
-| `GET`  | `/api/buildings/:buildingId/units` | Listar las unidades de un edificio con filtros y paginación    |
 
 ## Documentación Swagger
 
