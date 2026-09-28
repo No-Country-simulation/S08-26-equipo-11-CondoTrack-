@@ -116,24 +116,32 @@ const loginService = async (email, password) => {
   }
 
   persistUser(user);
+
+
   return { user, token };
 };
 
-// Alta pública: quien se registra acá es el dueño del edificio (SUPER_ADMIN).
-// Los residentes y administradores los da de alta el SUPER_ADMIN desde el dashboard.
+// Alta pública: el backend crea al usuario con rol RESIDENT vinculado al
+// buildingId indicado. Los demás roles los asigna un SUPER_ADMIN/ADMIN.
 export const registerService = async ({
   nombre,
   apellido,
+  tipoDocumento,
   documento,
+  telefono,
   email,
   password,
+  buildingId,
 }) => {
   const response = await httpClient.post("/auth/register", {
-    nombre,
-    apellido,
-    documento,
-    email,
+    firstName: nombre?.trim(),
+    lastName: apellido?.trim(),
+    documentType: tipoDocumento,
+    documentNumber: String(documento ?? "").trim(),
+    phone: telefono?.trim(),
+    email: email?.trim(),
     password,
+    buildingId: buildingId?.trim(),
   });
 
   return response.data;
