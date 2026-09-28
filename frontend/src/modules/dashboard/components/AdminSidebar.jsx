@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Icon } from "@/shared/components/Icon";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 
 const NAV_ITEMS = [
@@ -22,7 +23,22 @@ const NAV_ITEMS = [
 export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {
   const [open, setOpen] = useState(false);
   const { buildings, getBuildingById } = useBuildings();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const current = getBuildingById(selectedBuildingId);
+
+  const displayName =
+    `${user?.nombre ?? ""} ${user?.apellido ?? ""}`.trim() ||
+    user?.email ||
+    "Administración";
+  const initials =
+    `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`.toUpperCase() ||
+    (user?.email?.[0] ?? "A").toUpperCase();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <aside className="ct-sidebar">
@@ -81,13 +97,17 @@ export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {
       <div className="ct-sidebar-footer">
         <div className="d-flex align-items-center gap-3">
           <div className="ct-avatar" style={{ width: 32, height: 32, fontSize: "0.75rem", background: "rgba(255,255,255,0.2)" }}>
-            AM
+            {initials}
           </div>
           <div className="flex-grow-1 min-w-0">
-            <p className="text-white mb-0 text-truncate" style={{ fontSize: "0.75rem", fontWeight: 500 }}>Administración</p>
-            <p className="text-truncate mb-0" style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.4)" }}>{current.name}</p>
+            <p className="text-white mb-0 text-truncate" style={{ fontSize: "0.75rem", fontWeight: 500 }}>{displayName}</p>
+            <p className="text-truncate mb-0" style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.4)" }}>{user?.email ?? current.name}</p>
           </div>
         </div>
+        <button type="button" className="ct-sidebar-link mt-2" onClick={handleLogout}>
+          <Icon name="logout" size={15} />
+          Cerrar sesión
+        </button>
       </div>
     </aside>
   );
