@@ -9,6 +9,7 @@ import PropTypes from "prop-types";
 import loginService, {
   getCurrentUser,
   googleAuthUrl,
+  logoutService,
   persistBearerFromUrl,
   updateCurrentUser,
 } from "@/modules/auth/services/authService";
@@ -27,11 +28,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(readCachedUser);
   const [loading, setLoading] = useState(true);
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async (force = false) => {
     setLoading(true);
 
     try {
-      const currentUser = await getCurrentUser();
+      const currentUser = await getCurrentUser(force);
       setUser(currentUser);
 
       if (currentUser) {
@@ -53,8 +54,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Valida si ya hay una sesión activa (token guardado o cookie de Google)
     // consultando al backend, ya que la cookie de Google es httpOnly.
-    persistBearerFromUrl();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- restauración de sesión al montar
+    const tokenFromUrl = persistBearerFromUrl();
+    const hasToken = Boolean(
+      tokenFromUrl || localStorage.getItem("ct_token"),
+    );
+
+    // Sin token no hay sesión que validar: evitamos el GET /auth/me
+    // que el backend responde con 401 y solo mete ruido en consola.
+    if (!hasToken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- estado inicial sin sesión al montar
+      setLoading(false);
+      return;
+    }
+
     refreshSession().catch(() => null);
   }, [refreshSession]);
 
@@ -64,11 +76,12 @@ export function AuthProvider({ children }) {
     try {
       const { user: userFromLogin } = await loginService(email, password);
 
-      // El backend puede no tener /auth/me implementado todavía. Si falla,
-      // usamos el usuario que devolvió el login como fallback.
+      // El backend puede no tener /auth/me implementado todavía. Si falla
+      // o devuelve null, usamos el usuario que devolvió el login como
+      // fallback (getCurrentUser no lanza: retorna cacheado).
       let currentUser;
       try {
-        currentUser = await getCurrentUser();
+        currentUser = (await getCurrentUser()) ?? userFromLogin;
       } catch {
         currentUser = userFromLogin;
       }
@@ -96,9 +109,8 @@ export function AuthProvider({ children }) {
     window.location.href = googleAuthUrl;
   };
 
-  const logout = () => {
-    localStorage.removeItem("ct_token");
-    localStorage.removeItem("ct_user");
+  const logout = async () => {
+    await logoutService();
     setUser(null);
   };
 
