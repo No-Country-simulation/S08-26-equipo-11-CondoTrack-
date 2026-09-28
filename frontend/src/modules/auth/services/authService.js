@@ -1,22 +1,5 @@
 import httpClient from "@/core/api/httpClient";
 import { appConfig } from "@/core/config/env";
-import { ROLES } from "@/modules/auth/constants/roles";
-
-// TODO: quitar cuando el backend tenga /auth/login listo para probar en local.
-// Con VITE_MOCK_AUTH=true se valida contra MOCK_USER en vez de llamar al backend.
-const MOCK_USER = {
-  id: "mock-1",
-  nombre: "Usuario",
-  apellido: "Demo",
-  email: "demo@condotrack.test",
-  password: "Demo1234",
-  role: ROLES.SUPER_ADMIN,
-  telefono: "1122334455",
-  documento: "30123456",
-  tipoDocumento: "DNI",
-  codigoPostal: "1000",
-  perfilCompleto: true,
-};
 
 const toPublicUser = (user) => {
   const publicUser = { ...user };
@@ -67,6 +50,13 @@ const normalizeUser = (payload) => {
       profile.postalCode,
     perfilCompleto:
       user.perfilCompleto ?? user.profileComplete ?? profile.perfilCompleto,
+    // El backend devuelve `roles` (array); el frontend usa `role` (singular).
+    role:
+      user.role ??
+      user.rol ??
+      profile.role ??
+      user.roles?.[0] ??
+      profile.roles?.[0],
   });
 };
 
@@ -82,19 +72,6 @@ const extractToken = (response) => {
   return typeof token === "string"
     ? token.replace(/^Bearer\s+/i, "").trim()
     : null;
-};
-
-const mockLogin = async (email, password) => {
-  if (email !== MOCK_USER.email || password !== MOCK_USER.password) {
-    throw new Error("Credenciales inválidas");
-  }
-
-  const token = "mock-token";
-  localStorage.setItem("ct_token", token);
-
-  const user = normalizeUser(toPublicUser(MOCK_USER));
-  persistUser(user);
-  return { user, token };
 };
 
 const persistUser = (user) => {
@@ -116,10 +93,6 @@ const getCachedUser = () => {
 };
 
 const loginService = async (email, password) => {
-  if (appConfig.mockAuth) {
-    return mockLogin(email, password);
-  }
-
   const response = await httpClient.post("/auth/login", { email, password });
   const token = extractToken(response);
 
@@ -127,11 +100,12 @@ const loginService = async (email, password) => {
     localStorage.setItem("ct_token", token);
   }
 
-  // El backend puede no tener /auth/me implementado todavía. Si falla,
-  // usamos el usuario que viene en la respuesta de login como fallback.
+  // El backend puede no tener /auth/me implementado todavía. Si falla
+  // o devuelve null, usamos el usuario que viene en la respuesta de
+  // login como fallback (getCurrentUser no lanza: retorna cacheado).
   let user;
   try {
-    user = await getCurrentUser();
+    user = (await getCurrentUser()) ?? normalizeUser(response.data);
   } catch {
     user = normalizeUser(response.data);
   }
@@ -191,9 +165,26 @@ export const persistBearerFromUrl = () => {
 // URL a la que se redirige el navegador para iniciar el flujo de Google OAuth.
 export const googleAuthUrl = `${appConfig.apiUrl}/auth/google`;
 
-export const getCurrentUser = async () => {
-  if (appConfig.mockAuth) {
-    return normalizeUser(toPublicUser(MOCK_USER));
+export const logoutService = async () => {
+  // Best effort: avisa al backend para que invalide la sesión
+  // (necesario cuando la sesión vive en cookie httpOnly de Google).
+  try {
+    await httpClient.post("/auth/logout");
+  } catch {
+    // ignore: igual limpiamos la sesión local abajo
+  }
+
+  localStorage.removeItem("ct_token");
+  localStorage.removeItem("ct_user");
+};
+
+export const getCurrentUser = async (force = false) => {
+  // Sin token no hay sesión que validar: evitamos el GET /auth/me
+  // que el backend responde con 401 y solo mete ruido en consola.
+  // `force` se usa en el callback de Google, donde la sesión puede
+  // venir por cookie httpOnly (withCredentials) sin token en la URL.
+  if (!force && !localStorage.getItem("ct_token")) {
+    return getCachedUser();
   }
 
   try {
@@ -209,10 +200,6 @@ export const getCurrentUser = async () => {
 };
 
 export const updateCurrentUser = async (profile) => {
-  if (appConfig.mockAuth) {
-    return { ...toPublicUser(MOCK_USER), ...profile };
-  }
-
   const response = await httpClient.patch("/auth/me", {
     phone: profile.telefono,
     documentType: profile.tipoDocumento,
