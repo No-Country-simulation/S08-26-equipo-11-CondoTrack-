@@ -214,6 +214,11 @@ export const getCurrentUser = async (force = false) => {
 
 export const updateCurrentUser = async (profile) => {
   const response = await httpClient.patch("/auth/me", {
+    // El backend los exige si el usuario aún no tiene Person creada.
+    ...(profile.nombre?.trim() ? { firstName: profile.nombre.trim() } : {}),
+    ...(profile.apellido?.trim()
+      ? { lastName: profile.apellido.trim() }
+      : {}),
     phone: profile.telefono,
     documentType: profile.tipoDocumento,
     documentNumber: profile.documento,
