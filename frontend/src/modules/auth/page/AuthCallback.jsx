@@ -22,18 +22,19 @@ export function AuthCallback() {
 
     const token = persistBearerFromUrl();
 
-    if (!token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- estado inicial del callback OAuth
-      setError("No se recibio el token de autenticación");
-      return;
-    }
+    // El backend puede autenticar por cookie httpOnly sin token en la URL:
+    // igual intentamos validar la sesión forzando el GET /auth/me.
+    refreshSession(!token)
+      .then((user) => {
+        if (!user) {
+          setError("No se pudo validar la sesión. Intenta nuevamente.");
+          return;
+        }
 
-    refreshSession()
-      .then((user) =>
         navigate(isProfileComplete(user) ? "/inicio" : "/perfil/completar", {
           replace: true,
-        }),
-      )
+        });
+      })
       .catch(() =>
         setError("No se pudo validar la sesión. Intenta nuevamente."),
       );
