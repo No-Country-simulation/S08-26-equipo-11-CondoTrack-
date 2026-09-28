@@ -5,6 +5,7 @@ import catchAsync from "../../utils/catchAsync.js";
 import { validateCreateUnitDto } from "./dto/create-unit.dto.js";
 import { validateListUnitsDto } from "./dto/list-units.dto.js";
 import { UnitService } from "./unit.service.js";
+import { validateUpdateUnitDto } from "./dto/update-unit.dto.js";
 
 export class UnitController {
   constructor(private readonly unitService: UnitService) {}
@@ -62,6 +63,25 @@ export class UnitController {
     }
 
     const unit = await this.unitService.getById(unitId);
+
+    res.status(200).json({
+      success: true,
+      data: unit,
+    });
+  });
+
+  update: RequestHandler = catchAsync(async (req, res) => {
+    const rawId = req.params.unitId;
+    const unitId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!unitId) {
+      throw new AppError("El identificador de la unidad es obligatorio", 400);
+    }
+
+    const unit = await this.unitService.update(
+      unitId,
+      validateUpdateUnitDto(req.body),
+    );
 
     res.status(200).json({
       success: true,
