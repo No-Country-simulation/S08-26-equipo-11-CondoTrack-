@@ -1,3 +1,5 @@
+import { UniqueConstraintError } from "sequelize";
+
 import AppError from "../../utils/AppError.js";
 import { Building } from "../buildings/building.model.js";
 import { CreateUnitDto } from "./dto/create-unit.dto.js";
@@ -8,7 +10,10 @@ import {
   findUnitByCode,
   getUnitById,
   getUnitsByBuilding,
+  findOtherUnitByCode,
+  updateUnitFields,
 } from "./unit.repository.js";
+import { UpdateUnitDto } from "./dto/update-unit.dto.js";
 
 export class UnitService {
   async create(buildingId: string, dto: CreateUnitDto) {
@@ -94,5 +99,41 @@ export class UnitService {
         totalPages: Math.ceil(result.count / filters.limit),
       },
     };
+  }
+
+  async update(id: string, dto: UpdateUnitDto) {
+    const unit = await getUnitById(id);
+
+    if (!unit) {
+      throw new AppError("Unidad no encontrada", 404);
+    }
+
+    if (dto.code && dto.code !== unit.code) {
+      const duplicate = await findOtherUnitByCode(
+        unit.buildingId,
+        dto.code,
+        id,
+      );
+
+      if (duplicate) {
+        throw new AppError(
+          "Ya existe una unidad con ese código en el edificio",
+          409,
+        );
+      }
+    }
+
+    try {
+      return await updateUnitFields(unit, dto);
+    } catch (error) {
+      if (error instanceof UniqueConstraintError) {
+        throw new AppError(
+          "Ya existe una unidad con ese código en el edificio",
+          409,
+        );
+      }
+
+      throw error;
+    }
   }
 }
