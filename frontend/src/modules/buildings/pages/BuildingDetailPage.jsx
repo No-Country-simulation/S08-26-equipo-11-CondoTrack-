@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { Tabs, Tab } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
@@ -25,13 +25,15 @@ const STAFF_ROLE_LABELS = { receptionist: "Recepcionista / Portero", maintenance
 
 export const BuildingDetailPage = () => {
   const { buildingId } = useParams();
-  const id = Number(buildingId);
-  const { getBuildingById, buildings } = useBuildings();
+  // El backend usa UUID string: NO convertir a Number.
+  const id = buildingId;
+  const { getBuildingById, buildings, loading: buildingsLoading } =
+    useBuildings();
   const { user } = useAuth();
   const canManage = canManageBuildingResources(user?.role);
 
   const { forBuilding: residentsForBuilding } = useResidents();
-  const { forBuilding: unitsForBuilding } = useUnits();
+  const { forBuilding: unitsForBuilding, fetchUnits, isUnitsLoading, unitsError, getUnitsTotal } = useUnits();
   const { forBuilding: amenitiesForBuilding } = useAmenities();
   const { forBuilding: staffForBuilding } = useStaff();
   const { forBuilding: accessForBuilding } = useAccessLogs();
@@ -46,6 +48,18 @@ export const BuildingDetailPage = () => {
   const [showUnitsModal, setShowUnitsModal] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
 
+  useEffect(() => {
+    fetchUnits(id);
+  }, [id, fetchUnits]);
+
+  if (buildingsLoading) {
+    return (
+      <div className="ct-main-scroll">
+        <p className="ct-text-muted">Cargando edificio...</p>
+      </div>
+    );
+  }
+
   if (!buildings.some((b) => b.id === id)) {
     return <Navigate to="/dashboard/edificios" replace />;
   }
@@ -53,6 +67,9 @@ export const BuildingDetailPage = () => {
   const building = getBuildingById(id);
   const residents = residentsForBuilding(id);
   const units = unitsForBuilding(id);
+  const unitsLoading = isUnitsLoading(id);
+  const unitsLoadError = unitsError(id);
+  const unitsTotal = getUnitsTotal(id);
   const amenities = amenitiesForBuilding(id);
   const staff = staffForBuilding(id);
   const accessLogs = accessForBuilding(id);
@@ -75,7 +92,7 @@ export const BuildingDetailPage = () => {
 
       <div className="ct-grid-kpi mb-4">
         <div className="ct-card p-3 text-center">
-          <p className="ct-font-display mb-0" style={{ fontSize: "1.5rem", fontWeight: 600 }}>{building.units}</p>
+          <p className="ct-font-display mb-0" style={{ fontSize: "1.5rem", fontWeight: 600 }}>{unitsTotal ?? "—"}</p>
           <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>Unidades</p>
         </div>
         <div className="ct-card p-3 text-center">
@@ -121,12 +138,27 @@ export const BuildingDetailPage = () => {
               <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowUnitsModal(true)}>Gestionar unidades</button>
             </div>
           )}
-          <div className="ct-card p-3 d-flex flex-wrap gap-2">
-            {units.map((unit) => (
-              <span key={unit.id} className="badge bg-light text-dark border px-2 py-2">{unit.label}</span>
-            ))}
-            {units.length === 0 && <span className="ct-text-muted">Sin unidades cargadas.</span>}
-          </div>
+          {unitsLoading && <p className="ct-text-muted">Cargando unidades...</p>}
+          {unitsLoadError && (
+            <div className="alert alert-danger py-2 small">
+              {unitsLoadError}{" "}
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 align-baseline"
+                onClick={() => fetchUnits(id)}
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+          {!unitsLoading && !unitsLoadError && (
+            <div className="ct-card p-3 d-flex flex-wrap gap-2">
+              {units.map((unit) => (
+                <span key={unit.id} className="badge bg-light text-dark border px-2 py-2">{unit.label}</span>
+              ))}
+              {units.length === 0 && <span className="ct-text-muted">Sin unidades cargadas.</span>}
+            </div>
+          )}
         </Tab>
 
         <Tab eventKey="amenidades" title="Amenidades">

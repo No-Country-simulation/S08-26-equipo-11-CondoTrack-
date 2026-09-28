@@ -114,6 +114,6 @@ export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {
 };
 
 AdminSidebar.propTypes = {
-  selectedBuildingId: PropTypes.number.isRequired,
+  selectedBuildingId: PropTypes.string,
   onBuildingChange: PropTypes.func.isRequired,
 };

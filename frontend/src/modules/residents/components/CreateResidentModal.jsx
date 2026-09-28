@@ -30,7 +30,8 @@ export const CreateResidentModal = ({ show, onHide, onCreated, defaultBuildingId
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const buildingId = Number(form.buildingId);
+    // Los ids del backend son UUID string: no convertir a Number.
+    const buildingId = form.buildingId || "";
     const result = addResident({
       ...form,
       buildingId,
@@ -116,5 +117,5 @@ CreateResidentModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
   onCreated: PropTypes.func,
-  defaultBuildingId: PropTypes.number,
+  defaultBuildingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
