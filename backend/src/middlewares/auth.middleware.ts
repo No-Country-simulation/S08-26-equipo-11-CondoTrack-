@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import { NextFunction, RequestHandler } from "express";
 
 import { verifyToken } from "../modules/auth/jwt.js";
 import { Role } from "../modules/roles/role.model.js";
@@ -160,6 +160,38 @@ export const authorizeBuildingRoles = (
   ...allowedRoles: SystemRole[]
 ): RequestHandler => authorizeBuildingParam("buildingId", ...allowedRoles);
 
+const authorizeBuildingId = (
+  buildingId: string | undefined,
+  authUser: AuthenticatedUser,
+  allowedRoles: SystemRole[],
+  next: NextFunction,
+  requiredMessage?: string,
+) => {
+  if (isSuperAdmin(authUser)) {
+    next();
+    return;
+  }
+
+  if (!buildingId) {
+    throw new AppError(
+      requiredMessage ?? "El identificador del edificio es obligatorio",
+      400,
+    );
+  }
+
+  const hasBuildingRole = authUser.roles.some(
+    (role) =>
+      role.buildingId === buildingId &&
+      allowedRoles.includes(role.roleName as SystemRole),
+  );
+
+  if (!hasBuildingRole) {
+    throw new AppError(FORBIDDEN_MESSAGE, 403);
+  }
+
+  next();
+};
+
 /**
  * Implementacion unica de la autorizacion por edificio. El nombre del parametro
  * de ruta se recibe porque /buildings/:id y /buildings/:buildingId/units exponen
@@ -184,22 +216,40 @@ export const authorizeBuildingParam = (
       throw new AppError("El identificador del edificio es obligatorio", 400);
     }
 
-    if (isSuperAdmin(authUser)) {
-      next();
-      return;
+    authorizeBuildingId(buildingId, authUser, allowedRoles, next);
+  });
+};
+
+export type BuildingQueryOptions = {
+  /** Mensaje del 400 cuando el actor no puede omitir el edificio. */
+  requiredMessage?: string;
+};
+
+export const authorizeBuildingQuery = (
+  queryName: string,
+  options: BuildingQueryOptions,
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  return catchAsync((req, res, next) => {
+    const authUser = req.authenticatedUser;
+
+    if (!authUser) {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
     }
 
-    const hasBuildingRole = authUser.roles.some(
-      (role) =>
-        role.buildingId === buildingId &&
-        allowedRoles.includes(role.roleName as SystemRole),
+    const raw = req.query[queryName];
+
+    const value = Array.isArray(raw) ? raw[0] : raw;
+
+    const buildingId = typeof value === "string" ? value : undefined;
+
+    authorizeBuildingId(
+      buildingId,
+      authUser,
+      allowedRoles,
+      next,
+      options.requiredMessage,
     );
-
-    if (!hasBuildingRole) {
-      throw new AppError(FORBIDDEN_MESSAGE, 403);
-    }
-
-    next();
   });
 };
 

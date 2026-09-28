@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   authenticate,
+  authorizeBuildingQuery,
   authorizeRoles,
 } from "../../middlewares/auth.middleware.js";
 import { UserController } from "./user.controller.js";
@@ -13,6 +14,17 @@ const router = Router();
 const controller = new UserController(new UserService(new UserRepository()));
 
 router.use(authenticate);
+
+router.get(
+  "/",
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  authorizeBuildingQuery(
+    "buildingId",
+    { requiredMessage: "Debe indicar el edificio a consultar" },
+    "ADMIN",
+  ),
+  controller.list,
+);
 
 router.get("/:id", controller.getById);
 

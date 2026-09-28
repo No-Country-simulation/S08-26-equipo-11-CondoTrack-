@@ -18,3 +18,8 @@ export interface UserCreationAttributes extends Omit<
 > {
   personId?: string | null;
 }
+
+export interface UserListScope {
+  buildingId?: string;
+  roleId?: string;
+}

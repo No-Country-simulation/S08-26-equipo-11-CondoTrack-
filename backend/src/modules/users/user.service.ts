@@ -9,8 +9,9 @@ import AppError from "../../utils/AppError.js";
 import { Person } from "../people/people.model.js";
 import { Role } from "../roles/role.model.js";
 import { UserBuildingRole } from "../users-buildings-roles/user-building-role.model.js";
-import { ManageUserDto, UpdateProfileDto } from "./user.dto.js";
+import { ListUsersDto, ManageUserDto, UpdateProfileDto } from "./user.dto.js";
 import { UserRepository } from "./user.repository.js";
+import { UserListScope } from "./user.types.js";
 
 const forbidden = () =>
   new AppError("No tiene permisos para realizar esta acción", 403);
@@ -35,6 +36,95 @@ const profileView = (person: Person) => ({
 
 export class UserService {
   constructor(private readonly repository: UserRepository) {}
+
+  async list(scope: UserListScope, filters: ListUsersDto) {
+    const offset = (filters.page - 1) * filters.limit;
+
+    const { ids: userIds, total } = await this.repository.findUserIdsPage(
+      scope,
+      filters.limit,
+      offset,
+    );
+
+    if (!userIds.length) {
+      return {
+        users: [],
+        pagination: this.pagination(filters.page, filters.limit, total),
+      };
+    }
+
+    const [users, assignments] = await Promise.all([
+      this.repository.findPublicUsersByIds(userIds),
+      this.repository.findAssignments(userIds, scope.buildingId),
+    ]);
+
+    const rolesByUser = new Map<string, ReturnType<typeof rolesOf>>();
+
+    for (const row of assignments) {
+      const roles = rolesByUser.get(row.userId) ?? [];
+      roles.push(...rolesOf([row]));
+      rolesByUser.set(row.userId, roles);
+    }
+
+    const byId = new Map(users.map((user) => [user.id, user]));
+
+    return {
+      users: userIds.flatMap((id) => {
+        const user = byId.get(id);
+
+        if (!user) {
+          return [];
+        }
+
+        const person = user.get("person") as Person | null;
+
+        return [
+          {
+            id: user.id,
+            personId: user.personId,
+            email: user.email,
+            status: user.status,
+            firstName: person?.firstName ?? null,
+            lastName: person?.lastName ?? null,
+            documentType: person?.documentType ?? null,
+            documentNumber: person?.documentNumber ?? null,
+            phone: person?.phone ?? null,
+            roles: rolesByUser.get(id) ?? [],
+          },
+        ];
+      }),
+      pagination: this.pagination(filters.page, filters.limit, total),
+    };
+  }
+
+  private pagination(page: number, limit: number, total: number) {
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+      hasNextPage: page * limit < total,
+      hasPreviousPage: page > 1,
+    };
+  }
+
+  //traduce el nombre de rol solicitado a su id 400 si el rol no existe
+  async resolveListScope(filters: ListUsersDto): Promise<UserListScope> {
+    if (!filters.role) {
+      return filters.buildingId ? { buildingId: filters.buildingId } : {};
+    }
+
+    const definition = await this.repository.findRoleDefinition(filters.role);
+
+    if (!definition) {
+      throw new AppError("El rol indicado no existe", 400);
+    }
+
+    return {
+      ...(filters.buildingId ? { buildingId: filters.buildingId } : {}),
+      roleId: definition.id,
+    };
+  }
 
   async getById(id: string, actor: AuthenticatedUser) {
     const user = await this.repository.findUser(id);

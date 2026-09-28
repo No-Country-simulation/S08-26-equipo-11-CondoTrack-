@@ -60,3 +60,44 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 export const validateProfile = (input: unknown) => parse(profileSchema, input);
 
 export const validateManage = (input: unknown) => parse(manageSchema, input);
+
+// Es el mismo criterio de validacion que aplica el controller de este modulo a los ids de ruta
+const uuidSchema = z
+  .string()
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    "debe ser un UUID valido",
+  );
+
+const listSchema = z
+  .strictObject({
+    buildingId: z
+      .union([uuidSchema, z.literal("")])
+      .optional()
+      .transform((value) => (value ? value : undefined)),
+    role: z
+      .enum(["RESIDENT", "RECEPTION", "MAINTENANCE"], {
+        message: "El rol debe ser RESIDENT, RECEPTION o MAINTENANCE",
+      })
+      .optional(),
+    page: z.coerce.number().int().min(1).max(100000).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(10),
+  })
+  .strict();
+
+export type ListUsersDto = z.infer<typeof listSchema>;
+
+export const validateListUsers = (input: unknown): ListUsersDto => {
+  const result = listSchema.safeParse(input);
+
+  if (!result.success) {
+    throw new AppError(
+      result.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; "),
+      400,
+    );
+  }
+
+  return result.data;
+};
