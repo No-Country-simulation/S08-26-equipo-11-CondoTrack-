@@ -89,7 +89,7 @@ export const AmenitiesModal = ({ building, show, onHide }) => {
 };
 
 AmenitiesModal.propTypes = {
-  building: PropTypes.shape({ id: PropTypes.number, name: PropTypes.string }),
+  building: PropTypes.shape({ id: PropTypes.string, name: PropTypes.string }),
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
 };

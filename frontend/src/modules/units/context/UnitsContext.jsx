@@ -1,39 +1,89 @@
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import PropTypes from "prop-types";
-import { UNITS } from "@/modules/units/data/units.data";
-import { useActivityLog } from "@/core/activity/ActivityLogContext";
-import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
+import { listUnits } from "@/modules/units/services/unitsService";
 
 const UnitsContext = createContext(null);
 
 export function UnitsProvider({ children }) {
-  const [units, setUnits] = useState(UNITS);
-  const { logActivity } = useActivityLog();
-  const actor = useActorLabel();
+  const [unitsByBuilding, setUnitsByBuilding] = useState({});
+  const fetchedRef = useRef(new Set());
 
-  const forBuilding = (buildingId) => units.filter((unit) => unit.buildingId === buildingId);
+  const fetchUnits = useCallback(async (buildingId) => {
+    if (!buildingId || fetchedRef.current.has(buildingId)) return;
+    fetchedRef.current.add(buildingId);
 
-  const addUnit = (buildingId, label) => {
-    const trimmed = label.trim();
-    if (!trimmed) {
-      return { success: false, error: "Ingresá un identificador de unidad." };
+    setUnitsByBuilding((prev) => ({
+      ...prev,
+      [buildingId]: {
+        units: prev[buildingId]?.units ?? [],
+        total: prev[buildingId]?.total ?? null,
+        loading: true,
+        error: "",
+      },
+    }));
+
+    try {
+      const { units, total } = await listUnits(buildingId);
+
+      setUnitsByBuilding((prev) => ({
+        ...prev,
+        [buildingId]: { units, total, loading: false, error: "" },
+      }));
+    } catch (err) {
+      fetchedRef.current.delete(buildingId);
+      setUnitsByBuilding((prev) => ({
+        ...prev,
+        [buildingId]: {
+          units: [],
+          total: null,
+          loading: false,
+          error:
+            err?.response?.data?.message ??
+            "No se pudieron cargar las unidades.",
+        },
+      }));
     }
+  }, []);
 
-    const isDuplicate = units.some(
-      (unit) => unit.buildingId === buildingId && unit.label.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (isDuplicate) {
-      return { success: false, error: `La unidad "${trimmed}" ya existe en este edificio.` };
-    }
+  const forBuilding = useCallback(
+    (buildingId) => unitsByBuilding[buildingId]?.units ?? [],
+    [unitsByBuilding],
+  );
 
-    const nextId = units.length ? Math.max(...units.map((unit) => unit.id)) + 1 : 1;
-    setUnits((prev) => [...prev, { id: nextId, buildingId, label: trimmed }]);
-    logActivity({ actor, action: `Agregó la unidad "${trimmed}"`, buildingId });
-    return { success: true };
-  };
+  // Ocupación real (pagination.total). Sin pedir lista completa.
+  const getUnitsTotal = useCallback(
+    (buildingId) => unitsByBuilding[buildingId]?.total ?? null,
+    [unitsByBuilding],
+  );
+
+  const isUnitsLoading = useCallback(
+    (buildingId) => unitsByBuilding[buildingId]?.loading ?? false,
+    [unitsByBuilding],
+  );
+
+  const unitsError = useCallback(
+    (buildingId) => unitsByBuilding[buildingId]?.error ?? "",
+    [unitsByBuilding],
+  );
 
   return (
-    <UnitsContext.Provider value={{ forBuilding, addUnit }}>{children}</UnitsContext.Provider>
+    <UnitsContext.Provider
+      value={{
+        forBuilding,
+        fetchUnits,
+        getUnitsTotal,
+        isUnitsLoading,
+        unitsError,
+      }}
+    >
+      {children}
+    </UnitsContext.Provider>
   );
 }
 

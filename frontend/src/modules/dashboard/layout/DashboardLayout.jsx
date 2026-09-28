@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "@/modules/dashboard/components/AdminSidebar";
 import { TopBar } from "@/shared/components/TopBar";
@@ -63,16 +63,25 @@ const pageMetaFor = (pathname, building, buildingsCount) => {
 };
 
 export const DashboardLayout = () => {
-  const [selectedBuildingId, setSelectedBuildingId] = useState(1);
+  // Los ids del backend son UUID string: se selecciona el primero al cargar.
+  const [selectedBuildingId, setSelectedBuildingId] = useState(null);
   const { buildings, getBuildingById } = useBuildings();
-  const building = getBuildingById(selectedBuildingId);
+  const effectiveId = selectedBuildingId ?? buildings[0]?.id ?? null;
+  const building = getBuildingById(effectiveId);
   const { pathname } = useLocation();
   const { title, subtitle } = pageMetaFor(pathname, building, buildings.length);
+
+  useEffect(() => {
+    if (!selectedBuildingId && buildings.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- selección inicial al cargar la lista
+      setSelectedBuildingId(buildings[0].id);
+    }
+  }, [selectedBuildingId, buildings]);
 
   return (
     <div className="ct-app-shell">
       <AdminSidebar
-        selectedBuildingId={selectedBuildingId}
+        selectedBuildingId={effectiveId}
         onBuildingChange={setSelectedBuildingId}
       />
       <div className="ct-main">
