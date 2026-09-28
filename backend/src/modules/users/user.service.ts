@@ -4,12 +4,13 @@ import { sequelize } from "../../database/database.js";
 import {
   AuthenticatedUser,
   isSuperAdmin,
+  resolveBuildingScope,
 } from "../../middlewares/auth.middleware.js";
 import AppError from "../../utils/AppError.js";
 import { Person } from "../people/people.model.js";
 import { Role } from "../roles/role.model.js";
 import { UserBuildingRole } from "../users-buildings-roles/user-building-role.model.js";
-import { ManageUserDto, UpdateProfileDto } from "./user.dto.js";
+import { ManageUserDto, UpdateProfileDto, UserListQuery } from "./user.dto.js";
 import { UserRepository } from "./user.repository.js";
 
 const forbidden = () =>
@@ -33,8 +34,106 @@ const profileView = (person: Person) => ({
   phone: person.phone,
 });
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 25;
+
 export class UserService {
   constructor(private readonly repository: UserRepository) {}
+
+  private resolveListScope(
+    buildingId: string | undefined,
+    actor: AuthenticatedUser,
+  ) {
+    if (isSuperAdmin(actor)) {
+      return buildingId ?? null;
+    }
+
+    if (!buildingId) {
+      throw new AppError("El ADMIN debe indicar buildingId", 400);
+    }
+
+    const allowed = new Set(resolveBuildingScope(actor) ?? []);
+
+    if (!allowed.has(buildingId)) {
+      throw forbidden();
+    }
+
+    return buildingId;
+  }
+
+  async list(query: UserListQuery, actor: AuthenticatedUser) {
+    const buildingId = this.resolveListScope(query.buildingId, actor);
+
+    const roleId = query.role
+      ? (await this.repository.findRoleDefinition(query.role))?.id ?? null
+      : null;
+
+    if (query.role && !roleId) {
+      throw new AppError("El rol indicado no existe", 400);
+    }
+
+    const page = query.page ?? DEFAULT_PAGE;
+    const limit = query.limit ?? DEFAULT_LIMIT;
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await this.repository.findUserIdsPage(
+      buildingId,
+      roleId,
+      limit,
+      offset,
+    );
+
+    const userIds = [...new Set(rows.map((row) => row.userId))];
+
+    const [users, assignments] = await Promise.all([
+      this.repository.findPublicUsersByIds(userIds),
+      this.repository.findAssignments(userIds, buildingId, roleId),
+    ]);
+
+    const byId = new Map(users.map((user) => [user.id, user]));
+
+    const rolesByUser = new Map<string, Array<{ buildingId: string; roleName: string }>>();
+
+    for (const assignment of assignments) {
+      const role = assignment.get("role") as Role;
+      const list = rolesByUser.get(assignment.userId) ?? [];
+
+      list.push({
+        buildingId: assignment.buildingId,
+        roleName: role.name,
+      });
+
+      rolesByUser.set(assignment.userId, list);
+    }
+
+    const items = userIds.flatMap((userId) => {
+      const user = byId.get(userId);
+
+      if (!user) {
+        return [];
+      }
+
+      return [
+        {
+          id: user.id,
+          email: user.email,
+          status: user.status,
+          person: user.person ? profileView(user.person) : null,
+          roles: rolesByUser.get(userId) ?? [],
+        },
+      ];
+    });
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        totalItems: count,
+        totalPages: Math.ceil(count / limit),
+      },
+    };
+  }
 
   async getById(id: string, actor: AuthenticatedUser) {
     const user = await this.repository.findUser(id);

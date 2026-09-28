@@ -160,6 +160,27 @@ export const authorizeBuildingRoles = (
   ...allowedRoles: SystemRole[]
 ): RequestHandler => authorizeBuildingParam("buildingId", ...allowedRoles);
 
+// Nucleo compartido de autorización por edificio
+const authorizeBuildingScope = (
+  authUser: AuthenticatedUser,
+  buildingId: string,
+  allowedRoles: SystemRole[],
+): void => {
+  if (isSuperAdmin(authUser)) {
+    return;
+  }
+
+  const hasBuildingRole = authUser.roles.some(
+    (role) =>
+      role.buildingId === buildingId &&
+      allowedRoles.includes(role.roleName as SystemRole),
+  );
+
+  if (!hasBuildingRole) {
+    throw new AppError(FORBIDDEN_MESSAGE, 403);
+  }
+};
+
 /**
  * Implementacion unica de la autorizacion por edificio. El nombre del parametro
  * de ruta se recibe porque /buildings/:id y /buildings/:buildingId/units exponen
@@ -184,20 +205,39 @@ export const authorizeBuildingParam = (
       throw new AppError("El identificador del edificio es obligatorio", 400);
     }
 
-    if (isSuperAdmin(authUser)) {
-      next();
-      return;
+    authorizeBuildingScope(authUser, buildingId, allowedRoles);
+
+    next();
+  });
+};
+
+export const authorizeBuildingQuery = (
+  queryName: string,
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  return catchAsync((req, res, next) => {
+    const authUser = req.authenticatedUser;
+
+    if (!authUser) {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
     }
 
-    const hasBuildingRole = authUser.roles.some(
-      (role) =>
-        role.buildingId === buildingId &&
-        allowedRoles.includes(role.roleName as SystemRole),
-    );
+    const param = req.query[queryName];
 
-    if (!hasBuildingRole) {
-      throw new AppError(FORBIDDEN_MESSAGE, 403);
+    const raw = Array.isArray(param) ? param[0] : param;
+
+    const buildingId = typeof raw === "string" ? raw : undefined;
+
+    if (!buildingId) {
+      if (isSuperAdmin(authUser)) {
+        next();
+        return;
+      }
+
+      throw new AppError("El identificador del edificio es obligatorio", 400);
     }
+
+    authorizeBuildingScope(authUser, buildingId, allowedRoles);
 
     next();
   });
