@@ -17,4 +17,11 @@ router.get(
   unitController.getById,
 );
 
+router.patch(
+  "/:unitId",
+  authenticate,
+  authorizeUnitAdmin,
+  unitController.update,
+);
+
 export default router;

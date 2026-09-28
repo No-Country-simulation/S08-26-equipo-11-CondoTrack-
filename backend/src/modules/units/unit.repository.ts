@@ -3,6 +3,7 @@ import { Op, WhereOptions } from "sequelize";
 import { Unit, UnitAttributes, UnitCreationAttributes } from "./unit.model.js";
 import { Person } from "../people/people.model.js";
 import { UnitPeople } from "../unit-people/unit-people.model.js";
+import { UpdateUnitDto } from "./dto/update-unit.dto.js";
 
 export interface UnitListFilters {
   code?: string;
@@ -107,3 +108,21 @@ export const getUnitById = async (id: string): Promise<Unit | null> => {
     ],
   });
 };
+
+export const findOtherUnitByCode = (
+  buildingId: string,
+  code: string,
+  excludedId: string,
+) =>
+  Unit.findOne({
+    where: {
+      buildingId,
+      code,
+      id: { [Op.ne]: excludedId },
+    },
+  });
+
+export const updateUnitFields = (
+  unit: Unit,
+  data: UpdateUnitDto,
+): Promise<Unit> => unit.update(data);

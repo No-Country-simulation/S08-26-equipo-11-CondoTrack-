@@ -6,13 +6,13 @@ import {
   authorizeRoles,
   authorizeRolesForIncludeInactive,
 } from "../../middlewares/auth.middleware.js";
+import commonAreaRoutes from "../common-areas/common-area.routes.js";
+import buildingReservationRoutes from "../reservations/building-reservation.routes.js";
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "../roles/role.types.js";
 import unitRoutes from "../units/unit.routes.js";
 import { BuildingController } from "./building.controller.js";
 import { BuildingRepository } from "./building.repository.js";
 import { BuildingService } from "./building.service.js";
-import commonAreaRoutes from "../common-areas/common-area.routes.js";
-import buildingReservationRoutes from "../reservations/building-reservation.routes.js";
 
 const router = Router();
 
@@ -43,10 +43,15 @@ router.get(
   buildingController.getById,
 );
 
+router.patch(
+  "/:id",
+  authenticate,
+  authorizeRoles(SUPER_ADMIN_ROLE),
+  buildingController.update,
+);
+
 router.use("/:buildingId/common-areas", commonAreaRoutes);
-
 router.use("/:buildingId/reservations", buildingReservationRoutes);
-
 router.use("/:buildingId/units", unitRoutes);
 
 export default router;
