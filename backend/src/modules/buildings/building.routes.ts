@@ -11,6 +11,8 @@ import unitRoutes from "../units/unit.routes.js";
 import { BuildingController } from "./building.controller.js";
 import { BuildingRepository } from "./building.repository.js";
 import { BuildingService } from "./building.service.js";
+import commonAreaRoutes from "../common-areas/common-area.routes.js";
+import buildingReservationRoutes from "../reservations/building-reservation.routes.js";
 
 const router = Router();
 
@@ -29,7 +31,7 @@ router.get(
   "/",
   authenticate,
   authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
-  authorizeRolesForIncludeInactive(SUPER_ADMIN_ROLE), //middleware para permitir que solo los admins incluyan cosas inactivas
+  authorizeRolesForIncludeInactive(SUPER_ADMIN_ROLE),
   buildingController.list,
 );
 
@@ -37,10 +39,13 @@ router.get(
   "/:id",
   authenticate,
   authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
-  //el alcance por edificio se valida contra el parametro :id de esta ruta
   authorizeBuildingParam("id", SUPER_ADMIN_ROLE, ADMIN_ROLE),
   buildingController.getById,
 );
+
+router.use("/:buildingId/common-areas", commonAreaRoutes);
+
+router.use("/:buildingId/reservations", buildingReservationRoutes);
 
 router.use("/:buildingId/units", unitRoutes);
 
