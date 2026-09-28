@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { authenticate } from "../../middlewares/auth.middleware.js";
 import { authorizeUnitAdmin } from "../../middlewares/authorize-unit-admin.middleware.js";
+import visitsRoutes from "../accesses/access.routes.js";
 import { UnitController } from "./unit.controller.js";
 import { UnitService } from "./unit.service.js";
 
@@ -23,5 +24,7 @@ router.patch(
   authorizeUnitAdmin,
   unitController.update,
 );
+
+router.use("/:unitId/visits", authenticate, visitsRoutes);
 
 export default router;
