@@ -1,13 +1,22 @@
 import { Navigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { isProfileComplete } from "@/modules/auth/services/authService";
 
-function ProtectedRoute({ children, allowedRoles }) {
+function ProtectedRoute({
+  children,
+  allowedRoles,
+  allowIncompleteProfile = false,
+}) {
   const { user, loading } = useAuth();
 
   if (loading) return <div>Cargando...</div>;
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!allowIncompleteProfile && !isProfileComplete(user)) {
+    return <Navigate to="/perfil/completar" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
@@ -19,6 +28,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
   allowedRoles: PropTypes.arrayOf(PropTypes.string),
+  allowIncompleteProfile: PropTypes.bool,
 };
 
 export default ProtectedRoute;

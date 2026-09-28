@@ -48,7 +48,10 @@ export const RegisterPage = () => {
         onSubmit={handleSubmit}
       >
         <h1 className="login-title text-center mb-1">Registrá tu edificio</h1>
-        <p className="text-center ct-text-muted mb-4" style={{ fontSize: "0.875rem" }}>
+        <p
+          className="text-center ct-text-muted mb-4"
+          style={{ fontSize: "0.875rem" }}
+        >
           Creá tu cuenta de administración para empezar a usar CondoTrack.
         </p>
 
