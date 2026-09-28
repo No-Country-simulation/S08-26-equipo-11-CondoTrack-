@@ -17,6 +17,11 @@ export const isProfileComplete = (user) => {
   );
 };
 
+// Los roles del backend pueden venir como string ("ADMIN") o como objeto
+// ({ roleId, buildingId, roleName }). El frontend usa `role` como string.
+const roleName = (entry) =>
+  typeof entry === "string" ? entry : (entry?.roleName ?? entry?.name);
+
 const normalizeUser = (payload) => {
   const body = payload?.data ?? payload ?? {};
   const user = body?.user ?? body ?? {};
@@ -50,13 +55,13 @@ const normalizeUser = (payload) => {
       profile.postalCode,
     perfilCompleto:
       user.perfilCompleto ?? user.profileComplete ?? profile.perfilCompleto,
-    // El backend devuelve `roles` (array); el frontend usa `role` (singular).
+    // El backend devuelve `roles` (array); el frontend usa `role` (singular, string).
     role:
-      user.role ??
-      user.rol ??
-      profile.role ??
-      user.roles?.[0] ??
-      profile.roles?.[0],
+      roleName(user.role) ??
+      roleName(user.rol) ??
+      roleName(profile.role) ??
+      roleName(user.roles?.[0]) ??
+      roleName(profile.roles?.[0]),
   });
 };
 
