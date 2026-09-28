@@ -55,9 +55,7 @@ export function AuthProvider({ children }) {
     // Valida si ya hay una sesión activa (token guardado o cookie de Google)
     // consultando al backend, ya que la cookie de Google es httpOnly.
     const tokenFromUrl = persistBearerFromUrl();
-    const hasToken = Boolean(
-      tokenFromUrl || localStorage.getItem("ct_token"),
-    );
+    const hasToken = Boolean(tokenFromUrl || localStorage.getItem("ct_token"));
 
     // Sin token no hay sesión que validar: evitamos el GET /auth/me
     // que el backend responde con 401 y solo mete ruido en consola.
@@ -98,8 +96,26 @@ export function AuthProvider({ children }) {
 
     try {
       const updatedUser = await updateCurrentUser(profile);
-      setUser(updatedUser);
-      return updatedUser;
+
+      // El PATCH /me responde sin roles/edificios/unidades:
+      // se conservan los de la sesión para no perder permisos.
+      const mergedUser = {
+        ...updatedUser,
+        roles: updatedUser.roles ?? user?.roles ?? [],
+        role: updatedUser.role ?? user?.role,
+        buildings: updatedUser.buildings ?? user?.buildings ?? [],
+        units: updatedUser.units ?? user?.units ?? [],
+      };
+
+      setUser(mergedUser);
+
+      try {
+        localStorage.setItem("ct_user", JSON.stringify(mergedUser));
+      } catch {
+        // ignore
+      }
+
+      return mergedUser;
     } finally {
       setLoading(false);
     }
