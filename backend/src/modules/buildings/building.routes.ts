@@ -2,15 +2,20 @@ import { Router } from "express";
 
 import {
   authenticate,
+  authorizeBuildingParam,
   authorizeRoles,
+  authorizeRolesForIncludeInactive,
 } from "../../middlewares/auth.middleware.js";
-import { SUPER_ADMIN_ROLE } from "../roles/role.types.js";
+import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "../roles/role.types.js";
+import unitRoutes from "../units/unit.routes.js";
 import { BuildingController } from "./building.controller.js";
+import { BuildingRepository } from "./building.repository.js";
 import { BuildingService } from "./building.service.js";
 
 const router = Router();
 
-const buildingService = new BuildingService();
+const buildingRepository = new BuildingRepository();
+const buildingService = new BuildingService(buildingRepository);
 const buildingController = new BuildingController(buildingService);
 
 router.post(
@@ -19,5 +24,24 @@ router.post(
   authorizeRoles(SUPER_ADMIN_ROLE),
   buildingController.create,
 );
+
+router.get(
+  "/",
+  authenticate,
+  authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
+  authorizeRolesForIncludeInactive(SUPER_ADMIN_ROLE), //middleware para permitir que solo los admins incluyan cosas inactivas
+  buildingController.list,
+);
+
+router.get(
+  "/:id",
+  authenticate,
+  authorizeRoles(SUPER_ADMIN_ROLE, ADMIN_ROLE),
+  //el alcance por edificio se valida contra el parametro :id de esta ruta
+  authorizeBuildingParam("id", SUPER_ADMIN_ROLE, ADMIN_ROLE),
+  buildingController.getById,
+);
+
+router.use("/:buildingId/units", unitRoutes);
 
 export default router;

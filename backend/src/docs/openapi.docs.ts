@@ -6,7 +6,7 @@
  *       type: http
  *       scheme: bearer
  *       bearerFormat: JWT
- *       description: Los endpoints de auth emiten este token (firmado con `JWT_SECRET`, expira según `JWT_EXPIRES_IN`), pero en la rama `backend` todavía no existe un middleware que proteja rutas con él; queda documentado para cuando se agregue el guard de autenticación.
+ *       description: JWT utilizado para autenticar y autorizar el acceso a endpoints protegidos.
  */
 /**
  * @openapi
@@ -17,8 +17,10 @@
  *     description: Registro y autenticación (local y Google OAuth 2.0)
  *   - name: Buildings
  *     description: Gestión de edificios
- *   - name: Modelos de datos
- *     description: Entidades ya modeladas en Sequelize
+ *   - name: Units
+ *     description: Gestión de unidades de los edificios
+ *   - name: Residents
+ *     description: Vinculación y consulta de residentes de una unidad
  */
 
 export {};

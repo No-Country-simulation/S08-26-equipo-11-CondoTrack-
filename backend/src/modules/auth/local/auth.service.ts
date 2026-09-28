@@ -4,12 +4,13 @@ import { UniqueConstraintError } from "sequelize";
 import { sequelize } from "../../../database/database.js";
 import AppError from "../../../utils/AppError.js";
 import { RESIDENT_ROLE } from "../../roles/role.types.js";
+import { Person } from "../../people/people.model.js";
 import { signToken, JwtRole } from "../jwt.js";
 import { LoginUserDto } from "./login.dto.js";
 import { RegisterDto } from "./register.dto.js";
 import { LocalAuthRepository } from "./auth.repository.js";
 
-const BCRYPT_ROUNDS = 10; //hasheo de contraseña
+const BCRYPT_ROUNDS = 10;
 const INVALID_CREDENTIALS_MESSAGE = "Email o contraseña incorrectos";
 
 export interface RegisterResultRole {
@@ -33,6 +34,7 @@ export interface LoginResult {
   user: {
     id: string;
     email: string;
+    status: string;
     roles: JwtRole[];
   };
   token: string;
@@ -41,20 +43,16 @@ export interface LoginResult {
 export class LocalAuthService {
   constructor(private readonly authRepository: LocalAuthRepository) {}
 
-  // POST /api/auth/register
   async register(dto: RegisterDto): Promise<RegisterResult> {
     const email = dto.email.trim().toLowerCase();
 
-    //chequear que no este ya en DB
     const existing = await this.authRepository.findUserByEmail(email);
     if (existing) {
       throw new AppError("El email ya está registrado", 409);
     }
 
-    //hashear la pass
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
 
-    //crear el usuario desde el repository y asignarle el rol default RESIDENT
     const { user, residentRoleId } = await sequelize
       .transaction(async (transaction) => {
         const residentRole = await this.authRepository.findRoleByName(
@@ -65,14 +63,22 @@ export class LocalAuthService {
           throw new AppError("El rol RESIDENT no está configurado", 500);
         }
 
-        const user = await this.authRepository.createUser(
+        const person = await this.authRepository.createPerson(
           {
             firstName: dto.firstName,
             lastName: dto.lastName,
-            email,
             documentType: dto.documentType,
             documentNumber: dto.documentNumber,
+            email,
             phone: dto.phone,
+          },
+          transaction,
+        );
+
+        const user = await this.authRepository.createUser(
+          {
+            personId: person.id,
+            email,
             passwordHash,
             status: "ACTIVE",
             lastLoginAt: null,
@@ -105,13 +111,17 @@ export class LocalAuthService {
         throw error;
       });
 
+    await user.reload({
+      include: [{ model: Person, as: "person" }],
+    });
+
     const token = signToken({ sub: user.id });
 
     return {
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        firstName: user.person?.firstName ?? "",
+        lastName: user.person?.lastName ?? "",
         email: user.email,
         roles: [
           {
@@ -125,7 +135,6 @@ export class LocalAuthService {
     };
   }
 
-  //POST /api/auth/login
   async login(dto: LoginUserDto): Promise<LoginResult> {
     const user = await this.authRepository.findUserByEmail(dto.email, {
       includePasswordHash: true,
@@ -134,7 +143,6 @@ export class LocalAuthService {
     if (!user) {
       throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
     }
-    //verificar que la contraseña coincida con la de DB
     const passwordMatches = user.passwordHash
       ? await bcrypt.compare(dto.password, user.passwordHash)
       : false;
@@ -142,12 +150,16 @@ export class LocalAuthService {
     if (!passwordMatches) {
       throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
     }
+    if (user.status !== "ACTIVE") {
+      throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
+    }
 
-    //verificar roles asignados del usuario
     const roles = await this.authRepository.findUserRoles(user.id);
     if (roles.length === 0) {
       throw new AppError(INVALID_CREDENTIALS_MESSAGE, 401);
     }
+
+    await this.authRepository.updateLastLoginAt(user.id);
 
     const token = signToken({ sub: user.id, roles });
 
@@ -155,6 +167,7 @@ export class LocalAuthService {
       user: {
         id: user.id,
         email: user.email,
+        status: user.status,
         roles,
       },
       token,

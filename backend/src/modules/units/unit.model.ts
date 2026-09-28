@@ -1,15 +1,33 @@
 import "reflect-metadata";
+import { Optional } from "sequelize";
 import {
-  Table,
-  Column,
-  Model,
-  DataType,
-  PrimaryKey,
-  Default,
   AllowNull,
+  Column,
   CreatedAt,
+  DataType,
+  Default,
+  Model,
+  PrimaryKey,
+  Table,
   UpdatedAt,
 } from "sequelize-typescript";
+
+export interface UnitAttributes {
+  id: string;
+  buildingId: string;
+  code: string;
+  floor: number;
+  unitType: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface UnitCreationAttributes extends Optional<
+  UnitAttributes,
+  "id" | "description" | "isActive" | "createdAt" | "updatedAt"
+> {}
 
 @Table({
   tableName: "units",
@@ -18,43 +36,47 @@ import {
   indexes: [
     {
       unique: true,
-      fields: ["building_id", "unit_number"],
+      fields: ["building_id", "code"],
     },
   ],
 })
-export class Unit extends Model<Unit> {
+export class Unit
+  extends Model<UnitAttributes, UnitCreationAttributes>
+  implements UnitAttributes
+{
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id!: string;
+  declare id: string;
 
   @AllowNull(false)
   @Column(DataType.UUID)
-  buildingId!: string; //solo campo, sin relacion Sequelize
+  declare buildingId: string;
 
   @AllowNull(false)
   @Column(DataType.STRING(20))
-  unitNumber!: string; //string porque puede ser 101, 2A, PB, PH, LOCAL-01, TORRE-A-302 etcetc
+  declare code: string;
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column(DataType.INTEGER)
-  floor!: number | null;
+  declare floor: number;
 
-  @AllowNull(true)
+  @AllowNull(false)
   @Column(DataType.STRING(50))
-  type!: string | null;
-
-  @AllowNull(true)
-  @Column(DataType.DECIMAL(10, 2))
-  areaM2!: number | null;
+  declare unitType: string;
 
   @AllowNull(true)
   @Column(DataType.TEXT)
-  description!: string | null;
+  declare description: string | null;
+
+  @AllowNull(false)
+  @Default(true)
+  @Column(DataType.BOOLEAN)
+  declare isActive: boolean;
 
   @CreatedAt
-  createdAt!: Date;
+  declare createdAt: Date;
 
   @UpdatedAt
-  updatedAt!: Date;
+  declare updatedAt: Date;
 }

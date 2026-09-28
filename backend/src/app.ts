@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import { config } from "./config/env.js";
 import passport from "passport";
 import swaggerUi from "swagger-ui-express";
 
@@ -10,7 +11,12 @@ import indexRouter from "./routes/index.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: config.frontendUrl,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(passport.initialize());
 
@@ -38,6 +44,11 @@ app.get("/health", async (req: Request, res: Response) => {
 });
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// 404 catch-all: ruta no encontrada. tiene que ir al final, despues de TODAS las rutas y routers montados
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ success: false, message: "Ruta no encontrada" });
+});
 
 app.use(errorHandler);
 
