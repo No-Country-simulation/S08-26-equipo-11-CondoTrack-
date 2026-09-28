@@ -8,6 +8,7 @@ import {
 } from "../../middlewares/auth.middleware.js";
 import commonAreaRoutes from "../common-areas/common-area.routes.js";
 import buildingReservationRoutes from "../reservations/building-reservation.routes.js";
+import buildingDeliveryRoutes from "../deliveries/building-delivery.routes.js";
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "../roles/role.types.js";
 import unitRoutes from "../units/unit.routes.js";
 import { BuildingController } from "./building.controller.js";
@@ -49,6 +50,8 @@ router.patch(
   authorizeRoles(SUPER_ADMIN_ROLE),
   buildingController.update,
 );
+
+router.use("/:buildingId/deliveries", buildingDeliveryRoutes);
 
 router.use("/:buildingId/common-areas", commonAreaRoutes);
 router.use("/:buildingId/reservations", buildingReservationRoutes);
