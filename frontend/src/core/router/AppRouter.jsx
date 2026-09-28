@@ -99,6 +99,28 @@ const RoleSelectorPage = lazy(() =>
   })),
 );
 
+const CompleteProfilePage = lazy(() =>
+  import("@/modules/auth/page/CompleteProfilePage").then((m) => ({
+    default: m.CompleteProfilePage,
+  })),
+);
+
+const AuthCallback = lazy(() =>
+  import("@/modules/auth/page/AuthCallback").then((m) => ({
+    default: m.AuthCallback,
+  })),
+);
+
+function Unauthorized() {
+  return (
+    <main style={{ padding: "2rem", textAlign: "center" }}>
+      <h1>No autorizado</h1>
+      <p>No tenés permiso para ver esta página.</p>
+      <a href="/inicio">Volver al inicio</a>
+    </main>
+  );
+}
+
 function NotFound() {
   return (
     <main>
@@ -115,6 +137,16 @@ export default function AppRouter() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route
+            path="/perfil/completar"
+            element={
+              <ProtectedRoute allowIncompleteProfile>
+                <CompleteProfilePage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/inicio"
             element={
