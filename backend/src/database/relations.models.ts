@@ -9,6 +9,7 @@ import { AuditLog } from "../modules/audit/audit.model.js";
 import { Person } from "../modules/people/people.model.js";
 import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
 import { AccessAuthorization } from "../modules/accesses/access-authorization.model.js";
+import { AccessEvent } from "../modules/accesses/access-event.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
 
@@ -254,6 +255,60 @@ export function setupRelations(): void {
     foreignKey: "requestedByUserId",
     as: "requestedByUser",
   });
+
+  // AccessEvent <-> Building / Unit / Person / AccessAuthorization / User
+  // un evento de acceso registra el ingreso o la salida de un visitante y
+  // quien lo opero en porteria
+  Building.hasMany(AccessEvent, {
+    foreignKey: "buildingId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(AccessEvent, {
+    foreignKey: "unitId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(AccessEvent, {
+    foreignKey: "visitorId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Person, {
+    foreignKey: "visitorId",
+    as: "visitor",
+  });
+
+  AccessAuthorization.hasMany(AccessEvent, {
+    foreignKey: "authorizationId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(AccessAuthorization, {
+    foreignKey: "authorizationId",
+    as: "authorization",
+  });
+
+  User.hasMany(AccessEvent, {
+    foreignKey: "registeredByUserId",
+    as: "registeredAccessEvents",
+  });
+
+  AccessEvent.belongsTo(User, {
+    foreignKey: "registeredByUserId",
+    as: "registeredBy",
+  });
+
   // Sprint futuro: a medida que se sumen nuevas tablas (Amenities, Reservations,
   // Deliveries, Incidents, Moves, Notifications...) agregar aca sus
   // relaciones siguiendo el mismo patron usado arriba: hasMany() del lado "padre"
