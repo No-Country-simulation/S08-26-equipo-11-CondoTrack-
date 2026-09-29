@@ -1,9 +1,12 @@
 import { z } from "zod";
 import AppError from "../../utils/AppError.js";
+import { uuidSchema } from "../../utils/uuid.js";
 import { CARRIERS, DELIVERY_STATUSES } from "./delivery.model.js";
 
 const createSchema = z.strictObject({
-  recipientPersonId: z.uuid("recipientPersonId debe ser un UUID válido"),
+  recipientPersonId: uuidSchema(
+    "recipientPersonId debe ser un UUID válido",
+  ),
 
   carrier: z.enum(CARRIERS, {
     error:

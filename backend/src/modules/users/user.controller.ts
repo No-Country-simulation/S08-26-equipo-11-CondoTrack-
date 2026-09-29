@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 
 import catchAsync from "../../utils/catchAsync.js";
 import AppError from "../../utils/AppError.js";
+import { isUuid } from "../../utils/uuid.js";
 import {
   validateListUsers,
   validateManage,
@@ -15,12 +16,7 @@ export class UserController {
   private id(param: string | string[] | undefined) {
     const id = Array.isArray(param) ? param[0] : param;
 
-    if (
-      !id ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        id,
-      )
-    ) {
+    if (!id || !isUuid(id)) {
       throw new AppError("El id debe ser un UUID válido", 400);
     }
 

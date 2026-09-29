@@ -1,5 +1,6 @@
 import { z } from "zod";
 import AppError from "../../utils/AppError.js";
+import { uuidSchema } from "../../utils/uuid.js";
 import { ROLES } from "../roles/role.types.js";
 
 const profileSchema = z.strictObject({
@@ -22,21 +23,15 @@ const manageSchema = z.strictObject({
   roles: z
     .array(
       z.strictObject({
-        buildingId: z.uuid(),
+        buildingId: uuidSchema("buildingId debe ser un UUID válido"),
         roleName: z.enum(ROLES),
       }),
     )
     .optional(),
 });
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const listQuerySchema = z.strictObject({
-  buildingId: z
-    .string()
-    .regex(UUID_REGEX, "buildingId debe ser un UUID válido")
-    .optional(),
+  buildingId: uuidSchema("buildingId debe ser un UUID válido").optional(),
   role: z.enum(["RESIDENT", "RECEPTION", "MAINTENANCE"]).optional(),
   page: z
     .string()

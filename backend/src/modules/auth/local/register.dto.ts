@@ -1,10 +1,9 @@
 import { z } from "zod";
 import AppError from "../../../utils/AppError.js";
+import { UUID_REGEX } from "../../../utils/uuid.js";
 
 export const PASSWORD_MIN_LENGTH = 8;
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const registerSchema = z.object({
