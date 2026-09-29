@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { registerService } from "@/modules/auth/services/authService";
-import { GoogleAuthButton } from "@/modules/auth/components/GoogleAuthButton";
+import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { useUsers } from "@/modules/users/context/UsersContext";
+import { listUnits } from "@/modules/units/services/unitsService";
+import { linkResident } from "@/modules/residents/services/residentsService";
+import { apiErrorMessage } from "@/core/api/api";
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-export const RegisterPage = () => {
-  const navigate = useNavigate();
+export const CreateUserPage = () => {
+  const { buildings, loading: buildingsLoading } = useBuildings();
+  const { addLocalUser } = useUsers();
   const [form, setForm] = useState({
     nombre: "",
     apellido: "",
@@ -18,14 +20,50 @@ export const RegisterPage = () => {
     password: "",
     confirmPassword: "",
     buildingId: "",
+    unitId: "",
   });
+  const [units, setUnits] = useState([]);
+  const [unitsLoading, setUnitsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field) => (event) => {
-    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: event.target.value };
+      // Al cambiar de edificio se resetea la unidad elegida.
+      if (field === "buildingId") next.unitId = "";
+      return next;
+    });
   };
+
+  // Unidades del edificio elegido para vincular al usuario al crearlo.
+  // Sin vínculo a unidad, el residente no aparece en las listas.
+  useEffect(() => {
+    if (!form.buildingId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga de unidades al elegir edificio
+    setUnitsLoading(true);
+
+    listUnits(form.buildingId)
+      .then(({ units: buildingUnits }) => {
+        if (!cancelled) setUnits(buildingUnits);
+      })
+      .catch(() => {
+        if (!cancelled) setUnits([]);
+      })
+      .finally(() => {
+        if (!cancelled) setUnitsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.buildingId]);
 
   const validate = () => {
     const errors = {};
@@ -42,17 +80,14 @@ export const RegisterPage = () => {
       errors.password = "La contraseña debe tener al menos 8 caracteres.";
     if (form.password !== form.confirmPassword)
       errors.confirmPassword = "Las contraseñas no coinciden.";
-    if (!form.buildingId.trim()) {
-      errors.buildingId = "El ID del edificio es obligatorio.";
-    } else if (!UUID_REGEX.test(form.buildingId.trim())) {
-      errors.buildingId = "El ID del edificio no tiene un formato válido.";
-    }
+    if (!form.buildingId) errors.buildingId = "Elegí un edificio.";
     return errors;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setSuccessMessage("");
 
     const validationErrors = validate();
     setFieldErrors(validationErrors);
@@ -60,13 +95,61 @@ export const RegisterPage = () => {
 
     setLoading(true);
     try {
-      await registerService(form);
-      navigate("/login", { replace: true });
+      const result = await registerService(form);
+      const createdEmail = result?.data?.user?.email ?? form.email;
+
+      // Refleja al creado en la lista local (el backend aún no lo lista).
+      try {
+        await addLocalUser({
+          firstName: form.nombre,
+          lastName: form.apellido,
+          email: createdEmail,
+          phone: form.telefono,
+          buildingId: form.buildingId,
+        });
+      } catch {
+        // ignore: la lista se sincroniza al recargar
+      }
+
+      // Vincula a la unidad para que aparezca en las listas del edificio.
+      if (form.unitId) {
+        try {
+          await linkResident(
+            { id: form.unitId, buildingId: form.buildingId },
+            form.email,
+          );
+          setSuccessMessage(
+            `Usuario ${createdEmail} creado y vinculado a la unidad.`,
+          );
+        } catch (linkError) {
+          setSuccessMessage(`Usuario ${createdEmail} creado correctamente.`);
+          setError(
+            `No se pudo vincular a la unidad: ${apiErrorMessage(linkError, "intenta vincularlo desde Residentes.")}`,
+          );
+        }
+      } else {
+        setSuccessMessage(`Usuario ${createdEmail} creado correctamente.`);
+      }
+
+      setForm({
+        nombre: "",
+        apellido: "",
+        tipoDocumento: "",
+        documento: "",
+        telefono: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        buildingId: "",
+        unitId: "",
+      });
+      setUnits([]);
+      setFieldErrors({});
     } catch (err) {
       // Muestra el motivo real del backend (ej. email/documento duplicado).
       setError(
         err?.response?.data?.message ??
-          "No se pudo completar el registro. Inténtalo nuevamente.",
+          "No se pudo crear el usuario. Inténtalo nuevamente.",
       );
     } finally {
       setLoading(false);
@@ -74,21 +157,35 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="login-page d-flex justify-content-center align-items-center min-vh-100 px-3">
+    <div className="ct-main-scroll">
+      <Link
+        to="/dashboard/personal"
+        className="ct-card-link"
+        style={{ fontSize: "0.75rem" }}
+      >
+        ← Volver a personal
+      </Link>
+      <h2
+        className="ct-font-display mb-1 mt-1"
+        style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--color-ink)" }}
+      >
+        Crear usuario
+      </h2>
+      <p className="ct-text-muted mb-4" style={{ fontSize: "0.875rem" }}>
+        El usuario quedará vinculado al edificio con el rol que defina el
+        backend (hoy: RESIDENT).
+      </p>
+
+      {successMessage && (
+        <div className="alert alert-success py-2 mb-4">{successMessage}</div>
+      )}
+
       <form
         className="login-form p-4 rounded shadow-sm w-100"
-        autoComplete="on"
+        autoComplete="off"
         onSubmit={handleSubmit}
         noValidate
       >
-        <h1 className="login-title text-center mb-1">Creá tu cuenta</h1>
-        <p
-          className="text-center ct-text-muted mb-4"
-          style={{ fontSize: "0.875rem" }}
-        >
-          Registrate para acceder a tu edificio en CondoTrack.
-        </p>
-
         <div className="row g-3 mb-3">
           <div className="col-6">
             <label className="form-label" htmlFor="nombre">
@@ -98,7 +195,7 @@ export const RegisterPage = () => {
               className="form-control"
               id="nombre"
               type="text"
-              autoComplete="given-name"
+              autoComplete="off"
               value={form.nombre}
               onChange={handleChange("nombre")}
               required
@@ -117,7 +214,7 @@ export const RegisterPage = () => {
               className="form-control"
               id="apellido"
               type="text"
-              autoComplete="family-name"
+              autoComplete="off"
               value={form.apellido}
               onChange={handleChange("apellido")}
               required
@@ -182,7 +279,7 @@ export const RegisterPage = () => {
             className="form-control"
             id="telefono"
             type="tel"
-            autoComplete="tel"
+            autoComplete="off"
             value={form.telefono}
             onChange={handleChange("telefono")}
             required
@@ -202,8 +299,8 @@ export const RegisterPage = () => {
             className="form-control"
             id="email"
             type="email"
-            placeholder="tu@correo.com"
-            autoComplete="username"
+            placeholder="usuario@correo.com"
+            autoComplete="off"
             value={form.email}
             onChange={handleChange("email")}
             required
@@ -258,26 +355,59 @@ export const RegisterPage = () => {
 
         <div className="mb-3">
           <label className="form-label" htmlFor="buildingId">
-            ID del edificio
+            Edificio
           </label>
-          <input
-            className="form-control ct-font-mono"
+          <select
+            className="form-select"
             id="buildingId"
-            type="text"
-            placeholder="Ej. 00000000-0000-0000-0000-000000000002"
             value={form.buildingId}
             onChange={handleChange("buildingId")}
             required
-          />
-          <div className="form-text">
-            Pedí este código al administrador de tu edificio. Tu cuenta
-            quedará vinculada a él.
-          </div>
+            disabled={buildingsLoading || buildings.length === 0}
+          >
+            <option value="">
+              {buildingsLoading ? "Cargando..." : "Seleccioná un edificio"}
+            </option>
+            {buildings.map((building) => (
+              <option key={building.id} value={building.id}>
+                {building.name}
+              </option>
+            ))}
+          </select>
           {fieldErrors.buildingId && (
             <div className="invalid-feedback d-block">
               {fieldErrors.buildingId}
             </div>
           )}
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label" htmlFor="unitId">
+            Unidad (opcional)
+          </label>
+          <select
+            className="form-select"
+            id="unitId"
+            value={form.unitId}
+            onChange={handleChange("unitId")}
+            disabled={!form.buildingId || unitsLoading}
+          >
+            <option value="">
+              {!form.buildingId
+                ? "Primero elegí un edificio"
+                : unitsLoading
+                  ? "Cargando..."
+                  : "Sin vincular (solo cuenta)"}
+            </option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.code} · Piso {unit.floor}
+              </option>
+            ))}
+          </select>
+          <div className="form-text">
+            Si la elegís, el residente aparece en las listas del edificio.
+          </div>
         </div>
 
         {error && <div className="alert alert-danger py-2">{error}</div>}
@@ -287,23 +417,8 @@ export const RegisterPage = () => {
           className="login-submit w-100 btn"
           disabled={loading}
         >
-          {loading ? "Registrando..." : "Registrarse"}
+          {loading ? "Creando..." : "Crear usuario"}
         </button>
-
-        <div className="d-flex align-items-center gap-2 my-3">
-          <hr className="flex-grow-1" />
-          <span className="text-muted small">o</span>
-          <hr className="flex-grow-1" />
-        </div>
-
-        <GoogleAuthButton />
-
-        <p className="text-center mt-3 mb-0">
-          ¿Ya tienes cuenta?{" "}
-          <Link to="/login" className="login-link text-decoration-none">
-            Inicia sesión
-          </Link>
-        </p>
       </form>
     </div>
   );

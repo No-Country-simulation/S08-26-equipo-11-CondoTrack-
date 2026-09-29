@@ -1,15 +1,25 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "@/core/router/ProtectedRoute";
+import { ROLES } from "@/modules/auth/constants/roles";
 import { lazy, Suspense } from "react";
+import Loading from "@/shared/components/Loading";
+import NotFound from "@/shared/components/NotFound";
 
 const LoginPage = lazy(() =>
   import("@/modules/auth/page/LoginPage").then((module) => ({
     default: module.LoginPage,
   })),
 );
-const RegisterPage = lazy(() =>
-  import("@/modules/auth/page/RegisterPage").then((module) => ({
-    default: module.RegisterPage,
+
+const CreateUserPage = lazy(() =>
+  import("@/modules/users/pages/CreateUserPage").then((module) => ({
+    default: module.CreateUserPage,
+  })),
+);
+
+const UsuariosPage = lazy(() =>
+  import("@/modules/users/pages/UsuariosPage").then((module) => ({
+    default: module.UsuariosPage,
   })),
 );
 
@@ -119,30 +129,19 @@ const AuthCallback = lazy(() =>
 
 function Unauthorized() {
   return (
-    <main style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>No autorizado</h1>
-      <p>No tenés permiso para ver esta página.</p>
-      <a href="/inicio">Volver al inicio</a>
-    </main>
-  );
-}
-
-function NotFound() {
-  return (
-    <main>
-      <h1 className="">Página no encontrada</h1>
-      <Navigate to="/login" replace />
-    </main>
+    <NotFound
+      message="No tienes permisos para acceder a esta página."
+      homePath="/inicio"
+    />
   );
 }
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<p>Cargando...</p>}>
+      <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route
@@ -164,7 +163,7 @@ export default function AppRouter() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -172,6 +171,22 @@ export default function AppRouter() {
             <Route path="residentes" element={<ResidentsPage />} />
             <Route path="actividad" element={<ActivityPage />} />
             <Route path="personal" element={<StaffPage />} />
+            <Route
+              path="usuarios"
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
+                  <UsuariosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="usuarios/nuevo"
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
+                  <CreateUserPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="accesos" element={<AccessPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
             <Route path="reservas" element={<ReservationsPage />} />
