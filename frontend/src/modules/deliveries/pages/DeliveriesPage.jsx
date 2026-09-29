@@ -1,10 +1,16 @@
+import { useOutletContext } from "react-router-dom";
 import { Icon } from "@/shared/components/Icon";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
 
 export const DeliveriesPage = () => {
-  const { deliveries, pending, notified, delivered, notifyResident } = useDeliveries();
+  const { building } = useOutletContext();
+  const { forBuilding, notifyResident } = useDeliveries();
+  const deliveries = forBuilding(building?.id);
+  const pending = deliveries.filter((d) => d.status === "pending");
+  const notified = deliveries.filter((d) => d.status === "notified");
+  const delivered = deliveries.filter((d) => d.status === "delivered");
 
   return (
     <div className="ct-main-scroll">

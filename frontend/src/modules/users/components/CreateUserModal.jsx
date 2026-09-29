@@ -20,9 +20,13 @@ const EMPTY_FORM = {
   unitId: "",
 };
 
-export const CreateUserModal = ({ show, onHide, onCreated }) => {
+export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) => {
   const { buildings, loading: buildingsLoading } = useBuildings();
-  const [form, setForm] = useState(EMPTY_FORM);
+  const emptyForm = () => ({
+    ...EMPTY_FORM,
+    buildingId: defaultBuildingId ?? "",
+  });
+  const [form, setForm] = useState(emptyForm);
   const [units, setUnits] = useState([]);
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -69,7 +73,7 @@ export const CreateUserModal = ({ show, onHide, onCreated }) => {
   }, [show, form.buildingId]);
 
   const handleClose = () => {
-    setForm(EMPTY_FORM);
+    setForm(emptyForm());
     setUnits([]);
     setFieldErrors({});
     setError("");
@@ -124,10 +128,10 @@ export const CreateUserModal = ({ show, onHide, onCreated }) => {
         }
       }
 
-      setForm(EMPTY_FORM);
+      setForm(emptyForm());
       setUnits([]);
       setFieldErrors({});
-      onCreated?.(message);
+      onCreated?.(message, { buildingId: form.buildingId });
       handleClose();
     } catch (err) {
       // Muestra el motivo real del backend (ej. email/documento duplicado).
@@ -327,7 +331,11 @@ export const CreateUserModal = ({ show, onHide, onCreated }) => {
                 onChange={handleChange("buildingId")}
                 isInvalid={!!fieldErrors.buildingId}
                 required
-                disabled={buildingsLoading || buildings.length === 0}
+                disabled={
+                  !!defaultBuildingId ||
+                  buildingsLoading ||
+                  buildings.length === 0
+                }
               >
                 <option value="">
                   {buildingsLoading ? "Cargando..." : "Seleccioná un edificio"}
@@ -403,4 +411,5 @@ CreateUserModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
   onCreated: PropTypes.func,
+  defaultBuildingId: PropTypes.string,
 };

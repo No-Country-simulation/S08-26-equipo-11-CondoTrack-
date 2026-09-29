@@ -1,10 +1,16 @@
+import { useOutletContext } from "react-router-dom";
 import { Form } from "react-bootstrap";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 
 export const IncidentsPage = () => {
-  const { items, open, inProgress, resolved, updateStatus } = useIncidents();
+  const { building } = useOutletContext();
+  const { forBuilding, updateStatus } = useIncidents();
+  const items = forBuilding(building?.id);
+  const open = items.filter((i) => i.status === "open");
+  const inProgress = items.filter((i) => i.status === "in_progress");
+  const resolved = items.filter((i) => i.status === "resolved");
 
   return (
     <div className="ct-main-scroll">

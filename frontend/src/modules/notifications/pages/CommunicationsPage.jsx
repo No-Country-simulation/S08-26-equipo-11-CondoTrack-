@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
@@ -6,10 +7,19 @@ import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { SendNotificationModal } from "@/modules/notifications/components/SendNotificationModal";
 
 export const CommunicationsPage = () => {
+  const { building } = useOutletContext();
   const { notifications } = useNotificationsStore();
   const { getBuildingById } = useBuildings();
   const [showSend, setShowSend] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Avisos del edificio seleccionado (los globales aplican a todos).
+  const visibleNotifications = notifications.filter(
+    (notification) =>
+      notification.buildingId === null ||
+      notification.buildingId === undefined ||
+      notification.buildingId === building?.id,
+  );
 
   return (
     <div className="ct-main-scroll">
@@ -38,7 +48,7 @@ export const CommunicationsPage = () => {
           </p>
         </div>
         <div>
-          {notifications.map((notification) => (
+          {visibleNotifications.map((notification) => (
             <div key={notification.id} className="ct-row ct-row-hover">
               <div className="d-flex align-items-start justify-content-between gap-3">
                 <div>
@@ -54,7 +64,7 @@ export const CommunicationsPage = () => {
             </div>
           ))}
         </div>
-        {notifications.length === 0 && (
+        {visibleNotifications.length === 0 && (
           <div className="text-center py-5 ct-text-muted">Todavía no se enviaron avisos.</div>
         )}
       </div>

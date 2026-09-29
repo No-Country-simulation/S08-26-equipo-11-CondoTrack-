@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   direction: "Ingreso",
 };
 
-export const RegisterAccessModal = ({ show, onHide, onRegistered }) => {
+export const RegisterAccessModal = ({ show, onHide, onRegistered, defaultBuildingId }) => {
   const { addLogEntry } = useAccessLogs();
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
@@ -27,7 +27,7 @@ export const RegisterAccessModal = ({ show, onHide, onRegistered }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const result = addLogEntry(form);
+    const result = addLogEntry({ ...form, buildingId: defaultBuildingId });
     if (!result.success) {
       setError(result.error);
       return;
@@ -106,4 +106,5 @@ RegisterAccessModal.propTypes = {
   show: PropTypes.bool.isRequired,
   onHide: PropTypes.func.isRequired,
   onRegistered: PropTypes.func,
+  defaultBuildingId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };

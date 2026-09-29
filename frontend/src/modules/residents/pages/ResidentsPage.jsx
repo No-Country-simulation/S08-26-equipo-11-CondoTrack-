@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { StatusBadge } from "@/shared/components/StatusBadge";
@@ -6,7 +7,9 @@ import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { canManageBuildingResources } from "@/modules/auth/constants/roles";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { useResidents } from "@/modules/residents/hooks/useResidents";
-import { CreateResidentModal } from "@/modules/residents/components/CreateResidentModal";
+import { useResidentsStore } from "@/modules/residents/context/ResidentsContext";
+import { CreateUserModal } from "@/modules/users/components/CreateUserModal";
+import { LinkAccountModal } from "@/modules/residents/components/LinkAccountModal";
 
 const initialsOf = (name) =>
   name
@@ -16,12 +19,23 @@ const initialsOf = (name) =>
     .slice(0, 2);
 
 export const ResidentsPage = () => {
+  const { building: layoutBuilding } = useOutletContext();
   const { search, setSearch, filteredResidents } = useResidents();
   const { buildings } = useBuildings();
+  const { refreshBuilding } = useResidentsStore();
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
+  const [showLink, setShowLink] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedBuilding, setSelectedBuilding] = useState("all");
+
+  // Por defecto sigue al edificio del sidebar; "Todos" muestra todo.
+  useEffect(() => {
+    if (layoutBuilding?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- el sidebar manda el edificio
+      setSelectedBuilding(layoutBuilding.id);
+    }
+  }, [layoutBuilding?.id]);
 
   const canCreate = canManageBuildingResources(user?.role);
 
@@ -66,15 +80,25 @@ export const ResidentsPage = () => {
           </select>
         </button>
         {canCreate && (
-          <button
-            type="button"
-            className="btn btn-sm text-white d-flex align-items-center gap-2 flex-shrink-0"
-            style={{ background: "var(--color-accent)" }}
-            onClick={() => setShowCreate(true)}
-          >
-            <Icon name="plus" size={14} />
-            Nuevo residente
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 flex-shrink-0"
+              onClick={() => setShowLink(true)}
+            >
+              <Icon name="plus" size={14} />
+              Vincular cuenta
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm text-white d-flex align-items-center gap-2 flex-shrink-0"
+              style={{ background: "var(--color-accent)" }}
+              onClick={() => setShowCreate(true)}
+            >
+              <Icon name="plus" size={14} />
+              Nuevo residente
+            </button>
+          </>
         )}
       </div>
 
@@ -121,10 +145,21 @@ export const ResidentsPage = () => {
         )}
       </div>
 
-      <CreateResidentModal
+      <CreateUserModal
         show={showCreate}
         onHide={() => setShowCreate(false)}
-        onCreated={() => setSuccessMessage("Residente registrado correctamente.")}
+        onCreated={(message, info) => {
+          setSuccessMessage(message);
+          refreshBuilding(info?.buildingId);
+        }}
+      />
+      <LinkAccountModal
+        show={showLink}
+        onHide={() => setShowLink(false)}
+        onLinked={(info) => {
+          setSuccessMessage("Cuenta vinculada correctamente.");
+          refreshBuilding(info?.buildingId);
+        }}
       />
     </div>
   );

@@ -92,6 +92,17 @@ export function ResidentsProvider({ children }) {
     );
   }, [isAuthenticated, buildings, fetchBuildingResidents]);
 
+  // Refresca un edificio a la fuerza (ej. tras crear+vincular un residente).
+  const refreshBuilding = useCallback(
+    async (buildingId) => {
+      if (!buildingId) return;
+      const building = buildings.find((item) => item.id === buildingId);
+      fetchedRef.current.delete(buildingId);
+      await fetchBuildingResidents(buildingId, building?.name);
+    },
+    [buildings, fetchBuildingResidents],
+  );
+
   const forBuilding = useCallback(
     (buildingId) => residentsByBuilding[buildingId]?.residents ?? [],
     [residentsByBuilding],
@@ -188,6 +199,7 @@ export function ResidentsProvider({ children }) {
         addResident,
         isResidentsLoading,
         residentsError,
+        refreshBuilding,
       }}
     >
       {children}

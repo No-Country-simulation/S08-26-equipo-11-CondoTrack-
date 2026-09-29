@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
@@ -17,7 +17,9 @@ const ROLE_LABELS = {
 
 export const StaffPage = () => {
   const navigate = useNavigate();
-  const { staff } = useStaff();
+  const { building } = useOutletContext();
+  const { forBuilding } = useStaff();
+  const staff = forBuilding(building?.id);
   const { getBuildingById } = useBuildings();
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);

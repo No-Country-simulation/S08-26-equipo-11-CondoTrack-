@@ -3,8 +3,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "@/modules/dashboard/components/AdminSidebar";
 import { TopBar } from "@/shared/components/TopBar";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { useResidents } from "@/modules/residents/hooks/useResidents";
 
-const pageMetaFor = (pathname, building, buildingsCount) => {
+const pageMetaFor = (pathname, building, buildingsCount, residentsCount) => {
   if (pathname.startsWith("/dashboard/edificios/")) {
     return { title: "Edificios", subtitle: "Vista detallada del edificio" };
   }
@@ -20,7 +21,7 @@ const pageMetaFor = (pathname, building, buildingsCount) => {
     },
     "/dashboard/residentes": {
       title: "Residentes",
-      subtitle: `${building.name} · ${Math.round(building.units * 0.8)} residentes activos`,
+      subtitle: `${building.name} · ${residentsCount} residentes activos`,
     },
     "/dashboard/personal": {
       title: "Personal",
@@ -68,8 +69,10 @@ export const DashboardLayout = () => {
   const { buildings, getBuildingById } = useBuildings();
   const effectiveId = selectedBuildingId ?? buildings[0]?.id ?? null;
   const building = getBuildingById(effectiveId);
+  const { forBuilding: residentsForBuilding } = useResidents();
+  const residentsCount = residentsForBuilding(building.id).length;
   const { pathname } = useLocation();
-  const { title, subtitle } = pageMetaFor(pathname, building, buildings.length);
+  const { title, subtitle } = pageMetaFor(pathname, building, buildings.length, residentsCount);
 
   useEffect(() => {
     if (!selectedBuildingId && buildings.length > 0) {

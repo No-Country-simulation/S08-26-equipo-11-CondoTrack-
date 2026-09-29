@@ -17,8 +17,9 @@ import { useMoves } from "@/modules/moves/context/MovesContext";
 import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
-import { CreateResidentModal } from "@/modules/residents/components/CreateResidentModal";
-import { UnitsModal } from "@/modules/units/components/UnitsModal";
+import { CreateUserModal } from "@/modules/users/components/CreateUserModal";
+import { LinkAccountModal } from "@/modules/residents/components/LinkAccountModal";
+import { useResidentsStore } from "@/modules/residents/context/ResidentsContext";import { UnitsModal } from "@/modules/units/components/UnitsModal";
 import { AmenitiesModal } from "@/modules/amenities/components/AmenitiesModal";
 
 const STAFF_ROLE_LABELS = { receptionist: "Recepcionista / Portero", maintenance: "Mantenimiento" };
@@ -33,6 +34,7 @@ export const BuildingDetailPage = () => {
   const canManage = canManageBuildingResources(user?.role);
 
   const { forBuilding: residentsForBuilding } = useResidents();
+  const { refreshBuilding: refreshResidents } = useResidentsStore();
   const { forBuilding: unitsForBuilding, fetchUnits, isUnitsLoading, unitsError, getUnitsTotal } = useUnits();
   const { forBuilding: amenitiesForBuilding } = useAmenities();
   const { forBuilding: staffForBuilding } = useStaff();
@@ -45,6 +47,7 @@ export const BuildingDetailPage = () => {
   const { forBuilding: activityForBuilding } = useActivityLog();
 
   const [showResidentModal, setShowResidentModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
   const [showUnitsModal, setShowUnitsModal] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
 
@@ -112,7 +115,8 @@ export const BuildingDetailPage = () => {
       <Tabs defaultActiveKey="residentes" className="mb-3">
         <Tab eventKey="residentes" title="Residentes">
           {canManage && (
-            <div className="d-flex justify-content-end my-3">
+            <div className="d-flex justify-content-end gap-2 my-3">
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowLinkModal(true)}>Vincular cuenta</button>
               <button type="button" className="btn btn-sm text-white d-flex align-items-center gap-2" style={{ background: "var(--color-accent)" }} onClick={() => setShowResidentModal(true)}>
                 <Icon name="plus" size={13} /> Nuevo residente
               </button>
@@ -326,10 +330,17 @@ export const BuildingDetailPage = () => {
         </Tab>
       </Tabs>
 
-      <CreateResidentModal
+      <CreateUserModal
         show={showResidentModal}
         onHide={() => setShowResidentModal(false)}
         defaultBuildingId={id}
+        onCreated={(message, info) => refreshResidents(info?.buildingId ?? id)}
+      />
+      <LinkAccountModal
+        show={showLinkModal}
+        onHide={() => setShowLinkModal(false)}
+        defaultBuildingId={id}
+        onLinked={(info) => refreshResidents(info?.buildingId ?? id)}
       />
       <UnitsModal building={building} show={showUnitsModal} onHide={() => setShowUnitsModal(false)} />
       <AmenitiesModal building={building} show={showAmenitiesModal} onHide={() => setShowAmenitiesModal(false)} />
