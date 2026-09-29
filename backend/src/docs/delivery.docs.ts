@@ -119,3 +119,5 @@
  *       '403': { description: Sin permisos en el edificio }
  *       '404': { description: Edificio inexistente }
  */
+
+export {};

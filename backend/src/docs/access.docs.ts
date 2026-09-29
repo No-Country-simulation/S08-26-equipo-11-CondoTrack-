@@ -72,3 +72,5 @@
  *       '404': { description: Unidad inexistente }
  *
  */
+
+export {};

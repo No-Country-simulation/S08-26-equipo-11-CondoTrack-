@@ -4,6 +4,7 @@ import {
   authenticate,
   authorizeBuildingRoles,
 } from "../../middlewares/auth.middleware.js";
+import unitIncidentRoutes from "../incidents/unit-incident.routes.js";
 import { ADMIN_ROLE } from "../roles/role.types.js";
 import { UnitController } from "./unit.controller.js";
 import { UnitService } from "./unit.service.js";
@@ -28,5 +29,7 @@ router.get(
   authorizeBuildingRoles(ADMIN_ROLE),
   unitController.list,
 );
+
+router.use("/:unitId/incidents", unitIncidentRoutes);
 
 export default router;

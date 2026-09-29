@@ -73,3 +73,5 @@
  *       '403': { description: Sin rol en el edificio }
  *       '404': { description: Edificio inexistente }
  */
+
+export {};

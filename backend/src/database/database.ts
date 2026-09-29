@@ -12,6 +12,7 @@ import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
 import { AccessAuthorization } from "../modules/accesses/access-authorization.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
+import { Incident } from "../modules/incidents/incident.model.js";
 
 import { setupRelations } from "./relations.models.js";
 
@@ -33,6 +34,7 @@ export const sequelize = new Sequelize(config.databaseUrl, {
     AccessAuthorization,
     CommonArea,
     Reservation,
+    Incident,
   ],
 
   logging: isProduction
@@ -47,7 +49,7 @@ export const sequelize = new Sequelize(config.databaseUrl, {
   },
 });
 
-setupRelations(); //establecer las relaciones entre los modelos
+setupRelations(); 
 
 export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
