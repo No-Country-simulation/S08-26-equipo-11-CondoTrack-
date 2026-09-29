@@ -8,6 +8,8 @@ import { UserBuildingRole } from "../modules/users-buildings-roles/user-building
 import { AuditLog } from "../modules/audit/audit.model.js";
 import { Person } from "../modules/people/people.model.js";
 import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
+import { CommonArea } from "../modules/common-areas/common-area.model.js";
+import { Reservation } from "../modules/reservations/reservation.model.js";
 
 export function setupRelations(): void {
   // User <-> UserBuildingRole
@@ -160,6 +162,55 @@ export function setupRelations(): void {
     as: "person",
   });
 
+  Building.hasMany(CommonArea, {
+    foreignKey: "buildingId",
+    as: "commonAreas",
+  });
+
+  CommonArea.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Building.hasMany(Reservation, {
+    foreignKey: "buildingId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  CommonArea.hasMany(Reservation, {
+    foreignKey: "commonAreaId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(CommonArea, {
+    foreignKey: "commonAreaId",
+    as: "commonArea",
+  });
+
+  Unit.hasMany(Reservation, {
+    foreignKey: "unitId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  User.hasMany(Reservation, {
+    foreignKey: "requestedByUserId",
+    as: "requestedReservations",
+  });
+
+  Reservation.belongsTo(User, {
+    foreignKey: "requestedByUserId",
+    as: "requestedByUser",
+  });
   // Sprint futuro: a medida que se sumen nuevas tablas (Amenities, Reservations,
   // Deliveries, Visits, Incidents, Moves, Notifications...) agregar aca sus
   // relaciones siguiendo el mismo patron usado arriba: hasMany() del lado "padre"
