@@ -101,8 +101,11 @@ export function UsersProvider({ children }) {
   }, []);
 
   const grantRole = async ({ userId, role, buildingId, unit }) => {
-    const row = users.find((user) => user.id === userId);
-    const current = row?.roles ?? [];
+    // OJO: la lista (GET /users) recorta roles[] al scope del filtro.
+    // Para reemplazo total hay que partir del set COMPLETO (GET /:id),
+    // si no se pierden roles o aparecen duplicados fantasma -> 400.
+    const detail = await getUser(userId);
+    const current = detail.roles ?? [];
     const exists = current.some(
       (entry) =>
         entry.roleName === role &&
@@ -130,8 +133,9 @@ export function UsersProvider({ children }) {
   };
 
   const revokeRole = async ({ userId, role, buildingId }) => {
-    const row = users.find((user) => user.id === userId);
-    const next = (row?.roles ?? []).filter(
+    // Idem grantRole: partir del set completo, no de la fila filtrada.
+    const detail = await getUser(userId);
+    const next = (detail.roles ?? []).filter(
       (entry) =>
         !(
           entry.roleName === role &&
