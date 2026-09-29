@@ -14,6 +14,7 @@ import { AccessEvent } from "../modules/accesses/access-event.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
 import { Incident } from "../modules/incidents/incident.model.js";
+import { Delivery } from "../modules/deliveries/delivery.model.js";
 
 import { setupRelations } from "./relations.models.js";
 
@@ -37,6 +38,7 @@ export const sequelize = new Sequelize(config.databaseUrl, {
     CommonArea,
     Reservation,
     Incident,
+    Delivery,
   ],
 
   logging: isProduction
@@ -51,7 +53,7 @@ export const sequelize = new Sequelize(config.databaseUrl, {
   },
 });
 
-setupRelations(); 
+setupRelations();
 
 export async function checkDatabaseConnection(): Promise<void> {
   console.log("[Database] ⌛ Conectando a PostgreSQL...");
