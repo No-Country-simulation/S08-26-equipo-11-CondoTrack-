@@ -8,7 +8,7 @@
  *   post:
  *     tags: [Visits]
  *     summary: Autorizar la visita de un visitante a una unidad
- *     description: "Crea una access_authorization para la unidad. RESIDENT solo para su propia unidad (vinculo activo via unit_people); ADMIN solo en sus edificios; SUPER_ADMIN en todas. Devuelve qrTokenHash, UUID v4 unico que el frontend renderiza como QR."
+ *     description: "Crea una access_authorization para la unidad. RESIDENT solo para su propia unidad (vinculo activo via unit_people); ADMIN solo en sus edificios; SUPER_ADMIN en todas. El token se devuelve en claro para que el frontend dibuje el QR; en BD solo se guarda su hash SHA-256 en qr_token_hash."
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - in: path
@@ -49,6 +49,7 @@
  *               success: true
  *               data:
  *                 id: '00000000-0000-0000-0000-000000000001'
+ *                 qrToken: '11111111-1111-4111-8111-111111111111'
  *                 qrTokenHash: '11111111-1111-4111-8111-111111111111'
  *                 status: PENDING
  *                 validFrom: '2026-09-28T18:00:00Z'

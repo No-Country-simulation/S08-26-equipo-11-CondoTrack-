@@ -79,8 +79,9 @@ export class AccessAuthorization
   @Column(DataType.STRING(20))
   declare status: string;
 
+  // SHA-256 en hexadecimal: nunca se guarda el token utilizable
   @AllowNull(false)
-  @Column(DataType.UUID)
+  @Column(DataType.STRING(64))
   declare qrTokenHash: string;
 
   @CreatedAt

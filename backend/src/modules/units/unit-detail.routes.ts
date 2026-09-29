@@ -25,6 +25,6 @@ router.patch(
   unitController.update,
 );
 
-router.use("/:unitId/visits", authenticate, visitsRoutes);
+router.use("/:unitId/visits", visitsRoutes);
 
 export default router;

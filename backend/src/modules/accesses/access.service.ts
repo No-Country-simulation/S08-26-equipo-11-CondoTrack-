@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { sequelize } from "../../database/database.js";
 import { AuthenticatedUser } from "../../middlewares/auth.middleware.js";
@@ -25,6 +25,11 @@ function splitName(fullName: string) {
     firstName: parts[0] ?? "",
     lastName: parts.slice(1).join(" "),
   };
+}
+
+// El token viaja al cliente en claro y en BD solo queda su hash SHA-256
+export function hashQrToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export class AccessService {
@@ -68,7 +73,7 @@ export class AccessService {
         validFrom.getTime() + VISIT_DEFAULT_WINDOW_MINUTES * 60_000,
       );
 
-      const qrTokenHash = randomUUID();
+      const qrToken = randomUUID();
 
       const authorization = await this.repository.createAuthorization(
         {
@@ -79,14 +84,16 @@ export class AccessService {
           validFrom,
           validUntil,
           status: "PENDING",
-          qrTokenHash,
+          qrTokenHash: hashQrToken(qrToken),
         },
         transaction,
       );
 
       return {
         id: authorization.id,
-        qrTokenHash: authorization.qrTokenHash,
+        qrToken,
+        // alias de compatibilidad con el contrato de CT-S4-01: contiene el token, no el hash guardado en db.
+        qrTokenHash: qrToken,
         status: authorization.status,
         validFrom: authorization.validFrom,
         validUntil: authorization.validUntil,
