@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: "/dashboard/edificios", label: "Edificios", icon: "buildings" },
   { to: "/dashboard/residentes", label: "Residentes", icon: "residents" },
   { to: "/dashboard/personal", label: "Personal", icon: "person" },
+  { to: "/dashboard/usuarios", label: "Usuarios", icon: "user-plus" },
   { to: "/dashboard/accesos", label: "Accesos", icon: "access" },
   { to: "/dashboard/deliveries", label: "Deliveries", icon: "deliveries", badge: 3 },
   { to: "/dashboard/reservas", label: "Reservas", icon: "reservations" },
