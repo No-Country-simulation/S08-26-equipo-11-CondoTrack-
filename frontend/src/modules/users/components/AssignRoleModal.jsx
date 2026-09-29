@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Alert, Button, Form, Modal } from "react-bootstrap";
 import PropTypes from "prop-types";
 import { ROLES } from "@/modules/auth/constants/roles";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { useUsers } from "@/modules/users/context/UsersContext";
 import { listUnits } from "@/modules/units/services/unitsService";
@@ -14,13 +15,36 @@ const ASSIGNABLE_ROLES = [
   ROLES.RESIDENT,
 ];
 
+const STATUS_OPTIONS = ["ACTIVE", "INACTIVE", "BLOCKED"];
+
 export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
   const { buildings } = useBuildings();
-  const { grantRole } = useUsers();
+  const { grantRole, revokeRole, setUserStatus } = useUsers();
+  const { user: actor } = useAuth();
   const [form, setForm] = useState({ role: "", buildingId: "", unitId: "" });
   const [units, setUnits] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  // Jerarquía del backend: solo SUPER_ADMIN gestiona todo. Un ADMIN no puede
+  // gestionarse a sí mismo, ni tocar roles ADMIN/SUPER_ADMIN, ni edificios
+  // donde no es ADMIN. El backend lo refuerza; acá se deshabilita antes.
+  const isSuper = actor?.role === ROLES.SUPER_ADMIN;
+  const adminBuildings = (actor?.roles ?? [])
+    .filter((entry) => entry.roleName === ROLES.ADMIN)
+    .map((entry) => entry.buildingId);
+  const isSelf = actor?.id === user?.id;
+  const targetIsPrivileged = (user?.roles ?? []).some((entry) =>
+    [ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(entry.roleName),
+  );
+  const managedBuildings = isSuper
+    ? buildings
+    : buildings.filter((building) => adminBuildings.includes(building.id));
+  const manageableRoles = isSuper
+    ? ASSIGNABLE_ROLES
+    : ASSIGNABLE_ROLES.filter((role) => role !== ROLES.ADMIN);
+  const blocked = !isSuper && (isSelf || targetIsPrivileged);
 
   // El padre monta con key={user.id}: el formulario nace limpio en cada apertura.
   useEffect(() => {
@@ -59,6 +83,11 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
     event.preventDefault();
     setError("");
 
+    if (blocked) {
+      setError("No tenés permiso para gestionar a este usuario.");
+      return;
+    }
+
     if (!form.role || !form.buildingId) {
       setError("Elegí un rol y un edificio.");
       return;
@@ -84,6 +113,52 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
 
   const fullName =
     `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email;
+
+  const handleRemoveRole = async (roleName, buildingId) => {
+    setError("");
+
+    if (blocked) {
+      setError("No tenés permiso para gestionar a este usuario.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updated = await revokeRole({
+        userId: user.id,
+        role: roleName,
+        buildingId,
+      });
+      onAssigned?.(updated);
+      onHide();
+    } catch (err) {
+      setError(apiErrorMessage(err, "No se pudo quitar el rol."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (event) => {
+    const status = event.target.value;
+    if (!status || status === user.status) return;
+    setError("");
+
+    if (blocked) {
+      setError("No tenés permiso para gestionar a este usuario.");
+      return;
+    }
+
+    setStatusSaving(true);
+    try {
+      const updated = await setUserStatus({ userId: user.id, status });
+      onAssigned?.(updated);
+      onHide();
+    } catch (err) {
+      setError(apiErrorMessage(err, "No se pudo cambiar el estado."));
+    } finally {
+      setStatusSaving(false);
+    }
+  };
 
   return (
     <Modal show={show} onHide={onHide} centered>
@@ -113,7 +188,7 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
               required
             >
               <option value="">Seleccioná un rol</option>
-              {ASSIGNABLE_ROLES.map((role) => (
+              {manageableRoles.map((role) => (
                 <option key={role} value={role}>
                   {role}
                 </option>
@@ -134,7 +209,7 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
               required
             >
               <option value="">Seleccioná un edificio</option>
-              {buildings.map((building) => (
+              {managedBuildings.map((building) => (
                 <option key={building.id} value={building.id}>
                   {building.name}
                 </option>
@@ -181,13 +256,50 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
               {user.roles.map((role, index) => (
                 <li
                   key={`${role.roleName}-${role.buildingId ?? "global"}-${index}`}
-                  className="ct-text-muted"
+                  className="ct-text-muted d-flex align-items-center justify-content-between gap-2"
                 >
-                  {role.roleName}
-                  {role.unitCode ? ` · Unidad ${role.unitCode}` : ""}
+                  <span>
+                    {role.roleName}
+                    {role.unitCode ? ` · Unidad ${role.unitCode}` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-danger"
+                    disabled={saving || blocked}
+                    onClick={() =>
+                      handleRemoveRole(role.roleName, role.buildingId)
+                    }
+                  >
+                    Quitar
+                  </button>
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="mt-3">
+            <p
+              className="ct-font-mono ct-text-muted mb-1"
+              style={{ fontSize: "0.75rem" }}
+            >
+              Estado de la cuenta
+            </p>
+            <Form.Select
+              value={user.status}
+              onChange={handleStatusChange}
+              disabled={statusSaving || blocked}
+            >
+              {STATUS_OPTIONS.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </Form.Select>
+            {blocked && (
+              <p className="ct-text-muted mt-2 mb-0" style={{ fontSize: "0.75rem" }}>
+                Solo un SUPER_ADMIN puede gestionar a este usuario.
+              </p>
+            )}
           </div>
         </Modal.Body>
         <Modal.Footer>
