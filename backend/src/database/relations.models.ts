@@ -6,6 +6,8 @@ import { Unit } from "../modules/units/unit.model.js";
 import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
 
 import { AuditLog } from "../modules/audit/audit.model.js";
+import { Person } from "../modules/people/people.model.js";
+import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
 
 export function setupRelations(): void {
   // User <-> UserBuildingRole
@@ -122,6 +124,40 @@ export function setupRelations(): void {
   AuditLog.belongsTo(User, {
     foreignKey: "performedBy",
     as: "performedByUser",
+  });
+
+  // Person <-> UnitPeople (N:M atraves de UnitPeople)
+  // una persona puede estar registrada en multiples unidades y una unidad puede tener multiples personas asociadas
+  Unit.hasMany(UnitPeople, {
+    foreignKey: "unitId",
+    as: "unitPeople",
+  });
+
+  UnitPeople.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(UnitPeople, {
+    foreignKey: "personId",
+    as: "unitPeople",
+  });
+
+  UnitPeople.belongsTo(Person, {
+    foreignKey: "personId",
+    as: "person",
+  });
+
+  // Person <-> User (1 a 0..1 via users.person_id)
+  // una persona puede tener a lo sumo un usuario asociado, y la FK vive en users.person_id, NO en people.
+  Person.hasOne(User, {
+    foreignKey: "personId",
+    as: "user",
+  });
+
+  User.belongsTo(Person, {
+    foreignKey: "personId",
+    as: "person",
   });
 
   // Sprint futuro: a medida que se sumen nuevas tablas (Amenities, Reservations,

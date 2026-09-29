@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { Optional } from "sequelize";
 import {
   Table,
   Column,
@@ -10,65 +11,81 @@ import {
   CreatedAt,
 } from "sequelize-typescript";
 
+export interface AuditLogAttributes {
+  id: string;
+  buildingId: string | null;
+  unitId: string | null;
+  performedBy: string | null;
+  action: string;
+  tableName: string;
+  recordId: string | null;
+  oldValues: Record<string, unknown> | null;
+  newValues: Record<string, unknown> | null;
+  ipAddress: string | null;
+  createdAt: Date;
+}
+
+export interface AuditLogCreationAttributes extends Optional<
+  AuditLogAttributes,
+  "id" | "createdAt"
+> {}
+
 @Table({
   tableName: "audit_logs",
   timestamps: true,
   updatedAt: false,
   underscored: true,
   indexes: [
-    {
-      fields: ["performed_by"],
-    },
-    {
-      fields: ["table_name", "record_id"],
-    },
-    {
-      fields: ["created_at"],
-    },
+    { fields: ["performed_by"] },
+    { fields: ["table_name", "record_id"] },
+    { fields: ["created_at"] },
   ],
 })
-export class AuditLog extends Model<AuditLog> {
+export class AuditLog
+  extends Model<AuditLogAttributes, AuditLogCreationAttributes>
+  implements AuditLogAttributes
+{
   @PrimaryKey
   @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  id!: string;
+  declare id: string;
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  buildingId!: string | null;
+  declare buildingId: string | null;
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  unitId!: string | null;
+  declare unitId: string | null;
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  performedBy!: string | null;
+  declare performedBy: string | null;
 
   @AllowNull(false)
   @Column(DataType.STRING(50))
-  action!: string;
+  declare action: string;
 
   @AllowNull(false)
   @Column(DataType.STRING(50))
-  tableName!: string;
+  declare tableName: string;
 
   @AllowNull(true)
   @Column(DataType.UUID)
-  recordId!: string | null;
+  declare recordId: string | null;
 
   @AllowNull(true)
   @Column(DataType.JSONB)
-  oldValues!: Record<string, unknown> | null;
+  declare oldValues: Record<string, unknown> | null;
 
   @AllowNull(true)
   @Column(DataType.JSONB)
-  newValues!: Record<string, unknown> | null;
+  declare newValues: Record<string, unknown> | null;
 
   @AllowNull(true)
   @Column(DataType.INET)
-  ipAddress!: string | null;
+  declare ipAddress: string | null;
 
   @CreatedAt
-  createdAt!: Date;
+  declare createdAt: Date;
 }

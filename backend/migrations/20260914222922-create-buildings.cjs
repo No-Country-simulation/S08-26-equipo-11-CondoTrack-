@@ -2,15 +2,6 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    console.log("TEST BUILDINGS");
-    console.log("createTable:", typeof queryInterface.createTable);
-    console.log("UUID:", typeof Sequelize.UUID);
-    console.log("STRING:", typeof Sequelize.STRING);
-    console.log("TEXT:", typeof Sequelize.TEXT);
-    console.log("BOOLEAN:", typeof Sequelize.BOOLEAN);
-    console.log("DATE:", typeof Sequelize.DATE);
-    console.log("literal:", typeof Sequelize.literal);
-
     await queryInterface.createTable("buildings", {
       id: {
         type: Sequelize.UUID,

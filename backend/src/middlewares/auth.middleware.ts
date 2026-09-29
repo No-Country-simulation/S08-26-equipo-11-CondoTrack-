@@ -5,6 +5,7 @@ import { Role } from "../modules/roles/role.model.js";
 import { SystemRole } from "../modules/roles/role.types.js";
 import { User } from "../modules/users/user.model.js";
 import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
+import { Person } from "../modules/people/people.model.js";
 import AppError from "../utils/AppError.js";
 import catchAsync from "../utils/catchAsync.js";
 
@@ -64,15 +65,26 @@ export const authenticate: RequestHandler = catchAsync(
     }
 
     //info del usuario, sin contraseña ni datos sensibles
+    //firstName/lastName viven en people (Person), no en users
     const user = await User.findByPk(userId, {
-      attributes: ["id", "firstName", "lastName", "email"],
+      attributes: ["id", "email", "status"],
+      include: [
+        {
+          model: Person,
+          as: "person",
+          attributes: ["id", "firstName", "lastName"],
+        },
+      ],
     });
 
     if (!user) {
       throw new AppError(UNAUTHORIZED_MESSAGE, 401);
     }
 
-    //todos los roles del usuario
+    if (user.status !== "ACTIVE") {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
+    }
+
     const roleRows = await UserBuildingRole.findAll({
       where: { userId: user.id },
       attributes: ["roleId", "buildingId"],
@@ -96,8 +108,8 @@ export const authenticate: RequestHandler = catchAsync(
 
     req.authenticatedUser = {
       id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.person?.firstName ?? "",
+      lastName: user.person?.lastName ?? "",
       email: user.email,
       roles,
     };
@@ -126,4 +138,91 @@ export const authorizeRoles = (
 
     next();
   });
+};
+
+//para que las rutas permitan incluir usuaros inactivos condicionalmente
+export const authorizeRolesForIncludeInactive = (
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  const authorize = authorizeRoles(...allowedRoles);
+
+  return (req, res, next) => {
+    if (req.query.includeInactive === "true") {
+      authorize(req, res, next);
+      return;
+    }
+
+    next();
+  };
+};
+
+export const authorizeBuildingRoles = (
+  ...allowedRoles: SystemRole[]
+): RequestHandler => authorizeBuildingParam("buildingId", ...allowedRoles);
+
+/**
+ * Implementacion unica de la autorizacion por edificio. El nombre del parametro
+ * de ruta se recibe porque /buildings/:id y /buildings/:buildingId/units exponen
+ * el mismo concepto con nombres distintos.
+ */
+export const authorizeBuildingParam = (
+  paramName: string,
+  ...allowedRoles: SystemRole[]
+): RequestHandler => {
+  return catchAsync((req, res, next) => {
+    const authUser = req.authenticatedUser;
+
+    if (!authUser) {
+      throw new AppError(UNAUTHORIZED_MESSAGE, 401);
+    }
+
+    const param = req.params[paramName];
+
+    const buildingId = Array.isArray(param) ? param[0] : param;
+
+    if (!buildingId) {
+      throw new AppError("El identificador del edificio es obligatorio", 400);
+    }
+
+    if (isSuperAdmin(authUser)) {
+      next();
+      return;
+    }
+
+    const hasBuildingRole = authUser.roles.some(
+      (role) =>
+        role.buildingId === buildingId &&
+        allowedRoles.includes(role.roleName as SystemRole),
+    );
+
+    if (!hasBuildingRole) {
+      throw new AppError(FORBIDDEN_MESSAGE, 403);
+    }
+
+    next();
+  });
+};
+
+/** SUPER_ADMIN conserva alcance global sobre edificios. */
+export const isSuperAdmin = (authUser: AuthenticatedUser): boolean =>
+  authUser.roles.some((role) => role.roleName === "SUPER_ADMIN");
+
+/**
+ * Alcance de edificios del usuario autenticado, derivado de la misma identidad
+ * que usa authorizeBuildingParam para no tener dos estrategias de alcance.
+ * null significa "todos los edificios" (SUPER_ADMIN); un array vacio significa
+ * "ninguno", que es el caso de un ADMIN sin edificios asignados.
+ */
+export const resolveBuildingScope = (
+  authUser: AuthenticatedUser,
+): string[] | null => {
+  if (isSuperAdmin(authUser)) {
+    return null;
+  }
+
+  const buildingIds = authUser.roles
+    .map((role) => role.buildingId)
+    .filter((buildingId): buildingId is string => Boolean(buildingId));
+
+  return [...new Set(buildingIds)];
 };
