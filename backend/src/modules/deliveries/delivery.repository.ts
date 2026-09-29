@@ -4,6 +4,7 @@ import { sequelize } from "../../database/database.js";
 import { Building } from "../buildings/building.model.js";
 import { UnitPeople } from "../unit-people/unit-people.model.js";
 import { Unit } from "../units/unit.model.js";
+import { User } from "../users/user.model.js";
 import { CreateDeliveryDto, ListDeliveriesDto } from "./delivery.dto.js";
 import { Delivery } from "./delivery.model.js";
 
@@ -64,6 +65,44 @@ export class DeliveryRepository {
     return Delivery.findAll({
       where: {
         buildingId,
+        ...(filters.status ? { status: filters.status } : {}),
+      },
+      order: [["receivedAt", "DESC"]],
+    });
+  }
+  findActiveUnitIdsForUser(userId: string, now: Date) {
+    return User.findByPk(userId, {
+      attributes: ["personId"],
+    }).then(async (user) => {
+      if (!user?.personId) {
+        return [];
+      }
+
+      const links = await UnitPeople.findAll({
+        where: {
+          personId: user.personId,
+          [Op.and]: [
+            {
+              [Op.or]: [{ startDate: null }, { startDate: { [Op.lte]: now } }],
+            },
+            {
+              [Op.or]: [{ endDate: null }, { endDate: { [Op.gte]: now } }],
+            },
+          ],
+        },
+        attributes: ["unitId"],
+      });
+
+      return [...new Set(links.map((link) => link.unitId))];
+    });
+  }
+
+  listMine(unitIds: string[], filters: ListDeliveriesDto) {
+    return Delivery.findAll({
+      where: {
+        unitId: {
+          [Op.in]: unitIds,
+        },
         ...(filters.status ? { status: filters.status } : {}),
       },
       order: [["receivedAt", "DESC"]],
