@@ -171,6 +171,10 @@ export function setupRelations(): void {
   });
 
   AccessAuthorization.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
   Building.hasMany(CommonArea, {
     foreignKey: "buildingId",
     as: "commonAreas",
