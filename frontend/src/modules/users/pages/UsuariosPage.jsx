@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { Alert, Badge } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { StatusBadge } from "@/shared/components/StatusBadge";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { ROLES } from "@/modules/auth/constants/roles";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { useUsers } from "@/modules/users/context/UsersContext";
 import { AssignRoleModal } from "@/modules/users/components/AssignRoleModal";
+import { CreateUserModal } from "@/modules/users/components/CreateUserModal";
 
-const ROLE_OPTIONS = ["", ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.RECEPTION, ROLES.MAINTENANCE, ROLES.RESIDENT];
+// El backend solo acepta estos roles en el filtro (ADMIN/SUPER_ADMIN dan 400).
+const ROLE_OPTIONS = ["", ROLES.RESIDENT, ROLES.RECEPTION, ROLES.MAINTENANCE];
 
 const fullNameOf = (user) =>
   `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email;
@@ -25,15 +28,24 @@ export const UsuariosPage = () => {
   const {
     users,
     total,
+    page,
+    totalPages,
     loading,
     error,
     filters,
     updateFilters,
+    goToPage,
     refreshUsers,
   } = useUsers();
   const { buildings, getBuildingById } = useBuildings();
+  const { user: currentUser } = useAuth();
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // El backend exige buildingId a los ADMIN (400 si falta).
+  const needsBuilding =
+    currentUser?.role === ROLES.ADMIN && !filters.buildingId;
 
   const buildingNameOf = (buildingId) => {
     if (!buildingId) return "—";
@@ -108,19 +120,28 @@ export const UsuariosPage = () => {
             </option>
           ))}
         </select>
-        <Link
-          to="/dashboard/usuarios/nuevo"
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
           className="btn btn-sm text-white d-flex align-items-center gap-2 ms-auto"
           style={{ background: "var(--color-accent)" }}
         >
           <Icon name="plus" size={14} />
           Nuevo usuario
-        </Link>
+        </button>
       </div>
 
       <p className="ct-font-mono ct-text-muted mb-3" style={{ fontSize: "0.75rem" }}>
-        {loading ? "Cargando..." : `${total} usuario(s)`}
+        {loading
+          ? "Cargando..."
+          : `${total} usuario(s) · Página ${page} de ${totalPages}`}
       </p>
+
+      {needsBuilding && !loading && (
+        <Alert variant="info" className="py-2 mb-4">
+          Elegí un edificio para ver sus usuarios.
+        </Alert>
+      )}
 
       <div className="ct-card overflow-hidden">
         <table className="ct-table mb-0">
@@ -143,12 +164,13 @@ export const UsuariosPage = () => {
                       {initialsOf(fullNameOf(user))}
                     </div>
                     <div>
-                      <p
-                        className="mb-0 fw-medium"
+                      <Link
+                        to={`/dashboard/usuarios/${user.id}`}
+                        className="mb-0 fw-medium text-decoration-none"
                         style={{ color: "var(--color-ink)" }}
                       >
                         {fullNameOf(user)}
-                      </p>
+                      </Link>
                       <p
                         className="ct-font-mono ct-text-muted mb-0"
                         style={{ fontSize: "0.75rem" }}
@@ -190,7 +212,13 @@ export const UsuariosPage = () => {
                 </td>
                 <td>
                   <StatusBadge
-                    status={user.status === "ACTIVE" ? "active" : "inactive"}
+                    status={
+                      user.status === "ACTIVE"
+                        ? "active"
+                        : user.status === "BLOCKED"
+                          ? "blocked"
+                          : "inactive"
+                    }
                   />
                 </td>
                 <td className="text-end">
@@ -213,16 +241,63 @@ export const UsuariosPage = () => {
         )}
       </div>
 
+      {totalPages > 1 && (
+        <div className="d-flex align-items-center justify-content-center gap-3 mt-3">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={loading || page <= 1}
+            onClick={() => goToPage(page - 1)}
+          >
+            Anterior
+          </button>
+          <span
+            className="ct-font-mono ct-text-muted"
+            style={{ fontSize: "0.75rem" }}
+          >
+            Página {page} de {totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={loading || page >= totalPages}
+            onClick={() => goToPage(page + 1)}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
       <AssignRoleModal
         key={selectedUser?.id ?? "none"}
         user={selectedUser}
         show={!!selectedUser}
         onHide={() => setSelectedUser(null)}
-        onAssigned={(updated) =>
+        onAssigned={(updated) => {
+          // Si el usuario ya no coincide con los filtros (ej. le quitaste
+          // el rol filtrado), no va a aparecer en la tabla: se avisa.
+          const roles = updated.roles ?? [];
+          const matches =
+            (!filters.role ||
+              roles.some((entry) => entry.roleName === filters.role)) &&
+            (!filters.buildingId ||
+              roles.some(
+                (entry) => entry.buildingId === filters.buildingId,
+              ));
           setSuccessMessage(
-            `Roles actualizados para ${updated.email}.`,
-          )
-        }
+            matches
+              ? `Roles actualizados para ${updated.email}.`
+              : `Rol actualizado. ${updated.email} ya no coincide con los filtros actuales.`,
+          );
+        }}
+      />
+      <CreateUserModal
+        show={showCreate}
+        onHide={() => setShowCreate(false)}
+        onCreated={(message) => {
+          setSuccessMessage(message);
+          refreshUsers();
+        }}
       />
     </div>
   );
