@@ -1,5 +1,5 @@
 import httpClient from "@/core/api/httpClient";
-import { unwrapObject } from "@/core/api/api";
+import { isUuid, unwrapObject } from "@/core/api/api";
 
 const normalizeRow = (raw = {}) => {
   const person = raw.person ?? {};
@@ -18,12 +18,25 @@ const normalizeRow = (raw = {}) => {
     documentType: person.documentType ?? null,
     documentNumber: person.documentNumber ?? null,
     roles: Array.isArray(raw.roles)
-      ? raw.roles.map((entry) => ({
-          roleName: entry.roleName ?? entry,
-          buildingId: entry.buildingId ?? null,
-          unitId: entry.unitId ?? null,
-          unitCode: entry.unitCode ?? null,
-        }))
+      ? raw.roles.map((entry) => {
+          // El backend devuelve objetos, pero si alguna vez llega un string
+          // se conserva el nombre y se marca sin edificio (el guard de
+          // manageUser lo va a frenar con mensaje claro de ser necesario).
+          if (typeof entry === "string") {
+            return {
+              roleName: entry,
+              buildingId: null,
+              unitId: null,
+              unitCode: null,
+            };
+          }
+          return {
+            roleName: entry.roleName ?? entry,
+            buildingId: entry.buildingId ?? null,
+            unitId: entry.unitId ?? null,
+            unitCode: entry.unitCode ?? null,
+          };
+        })
       : [],
     name: fullName || raw.email || "",
   };
@@ -116,6 +129,14 @@ export const manageUser = async (id, { status, roles } = {}) => {
   const payload = {};
   if (status) payload.status = status;
   if (roles) {
+    // El backend valida buildingId como UUID por entrada. Fallar acá con
+    // mensaje claro evita el críptico "roles.N.buildingId: Invalid UUID".
+    const invalid = roles.find((entry) => !isUuid(entry?.buildingId));
+    if (invalid) {
+      throw new Error(
+        `El rol ${invalid.roleName ?? "?"} no tiene un edificio válido. Recargá la lista e intentalo de nuevo.`,
+      );
+    }
     payload.roles = roles.map((entry) => ({
       buildingId: entry.buildingId,
       roleName: entry.roleName,
