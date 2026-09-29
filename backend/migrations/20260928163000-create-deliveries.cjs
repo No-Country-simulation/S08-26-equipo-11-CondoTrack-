@@ -87,7 +87,7 @@ module.exports = {
     );
 
     await queryInterface.sequelize.query(
-      "ALTER TABLE deliveries ADD CONSTRAINT deliveries_carrier_allowed CHECK (carrier IN ('Mercado Libre','Correo Argentino', 'Andreani', OCA','DHL','Otro'))",
+      "ALTER TABLE deliveries ADD CONSTRAINT deliveries_carrier_allowed CHECK (carrier IN ('Mercado Libre','Correo Argentino', 'Andreani', 'OCA','DHL','Otro'))",
     );
 
     await queryInterface.addIndex(

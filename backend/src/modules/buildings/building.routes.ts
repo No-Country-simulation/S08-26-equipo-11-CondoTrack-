@@ -11,6 +11,7 @@ import buildingReservationRoutes from "../reservations/building-reservation.rout
 import buildingDeliveryRoutes from "../deliveries/building-delivery.routes.js";
 import { ADMIN_ROLE, SUPER_ADMIN_ROLE } from "../roles/role.types.js";
 import unitRoutes from "../units/unit.routes.js";
+import buildingIncidentRoutes from "../incidents/building-incident.routes.js";
 import { BuildingController } from "./building.controller.js";
 import { BuildingRepository } from "./building.repository.js";
 import { BuildingService } from "./building.service.js";
@@ -56,5 +57,6 @@ router.use("/:buildingId/deliveries", buildingDeliveryRoutes);
 router.use("/:buildingId/common-areas", commonAreaRoutes);
 router.use("/:buildingId/reservations", buildingReservationRoutes);
 router.use("/:buildingId/units", unitRoutes);
+router.use("/:buildingId/incidents", buildingIncidentRoutes);
 
 export default router;

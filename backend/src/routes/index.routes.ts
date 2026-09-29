@@ -7,6 +7,7 @@ import unitDetailRoutes from "../modules/units/unit-detail.routes.js";
 import userRoutes from "../modules/users/user.routes.js";
 import reservationRoutes from "../modules/reservations/reservation.routes.js";
 import deliveryRoutes from "../modules/deliveries/delivery.routes.js";
+import incidentRoutes from "../modules/incidents/incident.routes.js";
 import { accessRouter } from "../modules/accesses/access.routes.js";
 
 const router = Router();
@@ -18,6 +19,7 @@ router.use("/units", unitDetailRoutes);
 router.use("/units/:unitId/residents", residentRoutes);
 router.use("/common-areas", reservationRoutes);
 router.use("/deliveries", deliveryRoutes);
+router.use("/incidents", incidentRoutes);
 router.use("/access", accessRouter);
 
 export default router;
