@@ -114,6 +114,18 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
   const fullName =
     `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email;
 
+  // Quitar el último rol dejaría al usuario sin acceso (y un ADMIN ya no
+  // podría revertirlo, porque gestionar exige rol previo en sus edificios).
+  const isLastRole = (user.roles ?? []).length <= 1;
+  const isDuplicate =
+    !!form.role &&
+    !!form.buildingId &&
+    (user.roles ?? []).some(
+      (entry) =>
+        entry.roleName === form.role &&
+        (entry.buildingId ?? null) === form.buildingId,
+    );
+
   const handleRemoveRole = async (roleName, buildingId) => {
     setError("");
 
@@ -265,7 +277,12 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
                   <button
                     type="button"
                     className="btn btn-link btn-sm p-0 text-danger"
-                    disabled={saving || blocked}
+                    disabled={saving || blocked || isLastRole}
+                    title={
+                      isLastRole
+                        ? "No se puede quitar el último rol del usuario"
+                        : "Quitar rol"
+                    }
                     onClick={() =>
                       handleRemoveRole(role.roleName, role.buildingId)
                     }
@@ -314,7 +331,12 @@ export const AssignRoleModal = ({ user, show, onHide, onAssigned }) => {
           <Button
             type="submit"
             size="sm"
-            disabled={saving}
+            disabled={saving || isDuplicate}
+            title={
+              isDuplicate
+                ? "El usuario ya tiene ese rol en ese edificio"
+                : "Asignar rol"
+            }
             style={{
               background: "var(--color-accent)",
               borderColor: "var(--color-accent)",
