@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { isProfileComplete } from "@/modules/auth/services/authService";
+import Loading from "@/shared/components/Loading";
 
 function ProtectedRoute({
   children,
@@ -10,7 +11,7 @@ function ProtectedRoute({
 }) {
   const { user, loading } = useAuth();
 
-  if (loading) return <div>Cargando...</div>;
+  if (loading) return <Loading />;
   if (!user) {
     return <Navigate to="/login" replace />;
   }
