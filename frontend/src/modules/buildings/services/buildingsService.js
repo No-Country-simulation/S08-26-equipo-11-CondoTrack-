@@ -1,4 +1,8 @@
 import httpClient from "@/core/api/httpClient";
+import { apiErrorMessage, unwrapList, unwrapObject } from "@/core/api/api";
+
+// Se mantiene el nombre para no romper importadores existentes.
+export const getApiErrorMessage = apiErrorMessage;
 
 const normalizeBuilding = (raw = {}) => ({
   id: raw.id,
@@ -18,18 +22,14 @@ const normalizeBuilding = (raw = {}) => ({
   updatedAt: raw.updatedAt ?? null,
 });
 
-export const getApiErrorMessage = (error, fallback) =>
-  error?.response?.data?.message ?? fallback;
-
 export const listBuildings = async () => {
   const response = await httpClient.get("/buildings");
-  const items = response.data?.data ?? response.data ?? [];
-  return (Array.isArray(items) ? items : []).map(normalizeBuilding);
+  return unwrapList(response).map(normalizeBuilding);
 };
 
 export const getBuilding = async (id) => {
   const response = await httpClient.get(`/buildings/${id}`);
-  return normalizeBuilding(response.data?.data ?? response.data);
+  return normalizeBuilding(unwrapObject(response));
 };
 
 export const createBuilding = async ({
@@ -52,5 +52,5 @@ export const createBuilding = async ({
     ...(zipCode?.trim() ? { zipCode: zipCode.trim() } : {}),
     ...(description?.trim() ? { description: description.trim() } : {}),
   });
-  return normalizeBuilding(response.data?.data ?? response.data);
+  return normalizeBuilding(unwrapObject(response));
 };
