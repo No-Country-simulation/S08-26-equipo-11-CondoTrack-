@@ -1,10 +1,16 @@
+import { useOutletContext } from "react-router-dom";
 import { Form } from "react-bootstrap";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 
 export const MaintenancePage = () => {
-  const { items, pending, inProgress, resolved, updateStatus } = useMaintenance();
+  const { building } = useOutletContext();
+  const { forBuilding, updateStatus } = useMaintenance();
+  const items = forBuilding(building?.id);
+  const pending = items.filter((m) => m.status === "pending");
+  const inProgress = items.filter((m) => m.status === "in_progress");
+  const resolved = items.filter((m) => m.status === "resolved");
 
   return (
     <div className="ct-main-scroll">
