@@ -1,8 +1,9 @@
 import { z } from "zod";
 import AppError from "../../utils/AppError.js";
+import { uuidSchema } from "../../utils/uuid.js";
 
 const schema = z.strictObject({
-  unitId: z.uuid("unitId debe ser un UUID válido"),
+  unitId: uuidSchema("unitId debe ser un UUID válido"),
 
   startAt: z.iso.datetime({ offset: true }),
 

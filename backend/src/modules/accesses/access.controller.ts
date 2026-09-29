@@ -2,6 +2,7 @@ import { Request, RequestHandler } from "express";
 
 import catchAsync from "../../utils/catchAsync.js";
 import AppError from "../../utils/AppError.js";
+import { isUuid } from "../../utils/uuid.js";
 import { validateQrDto, validateSearchAccessQuery } from "./access.dto.js";
 import { validateCreateVisitDto } from "./create-visit.dto.js";
 import { AccessService } from "./access.service.js";
@@ -13,12 +14,7 @@ export class AccessController {
     const param = req.params.unitId;
     const unitId = Array.isArray(param) ? param[0] : param;
 
-    if (
-      !unitId ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        unitId,
-      )
-    ) {
+    if (!unitId || !isUuid(unitId)) {
       throw new AppError(
         "El identificador de la unidad debe ser un UUID válido",
         400,

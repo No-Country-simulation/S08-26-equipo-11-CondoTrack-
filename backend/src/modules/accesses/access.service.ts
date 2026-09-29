@@ -9,13 +9,11 @@ import {
   resolveBuildingScope,
 } from "../../middlewares/auth.middleware.js";
 import AppError from "../../utils/AppError.js";
+import { isUuid } from "../../utils/uuid.js";
 import { Unit } from "../units/unit.model.js";
 import { ACCESS_EVENT_TYPE, ACCESS_METHOD } from "./access-event.model.js";
 import { AccessRepository } from "./access.repository.js";
 import { CreateVisitDto } from "./create-visit.dto.js";
-
-const UUID_FORMAT =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const VISITOR_DOCUMENT_TYPE = "DNI";
 
@@ -62,7 +60,7 @@ export class AccessService {
     dto: CreateVisitDto,
     actor: AuthenticatedUser,
   ) {
-    if (!UUID_FORMAT.test(unitId)) {
+    if (!isUuid(unitId)) {
       throw new AppError(
         "El identificador de la unidad debe ser un UUID válido",
         400,
@@ -286,7 +284,7 @@ export class AccessService {
   // CT-S4-02: la salida la anota la porteria, no el visitante, por eso
   // access_method = MANUAL. Exige un ENTRY previo y no admite duplicados.
   async registerExit(authorizationId: string, actor: AuthenticatedUser) {
-    if (!UUID_FORMAT.test(authorizationId)) {
+    if (!isUuid(authorizationId)) {
       throw new AppError(
         "El identificador de la autorizacion debe ser un UUID valido",
         400,

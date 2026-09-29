@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 
 import AppError from "../utils/AppError.js";
 import catchAsync from "../utils/catchAsync.js";
+import { isUuid } from "../utils/uuid.js";
 import { Unit } from "../modules/units/unit.model.js";
 
 export const authorizeUnitAdmin: RequestHandler = catchAsync(
@@ -15,10 +16,7 @@ export const authorizeUnitAdmin: RequestHandler = catchAsync(
     const unitIdParam = req.params.unitId;
     const unitId = Array.isArray(unitIdParam) ? unitIdParam[0] : unitIdParam;
 
-    const uuidFormat =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!unitId || !uuidFormat.test(unitId)) {
+    if (!unitId || !isUuid(unitId)) {
       throw new AppError(
         "El identificador de la unidad debe ser un UUID válido",
         400,

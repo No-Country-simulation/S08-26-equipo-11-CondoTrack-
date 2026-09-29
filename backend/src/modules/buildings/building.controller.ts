@@ -6,6 +6,7 @@ import { validateCreateBuildingDto } from "./create-building.dto.js";
 import { validateListBuildingsDto } from "./list-buildings.dto.js";
 import { BuildingService } from "./building.service.js";
 import AppError from "../../utils/AppError.js";
+import { isUuid } from "../../utils/uuid.js";
 import { validateUpdateBuildingDto } from "./update-building.dto.js";
 
 export class BuildingController {
@@ -52,12 +53,7 @@ export class BuildingController {
     const rawId = req.params.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
-    if (
-      !id ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        id,
-      )
-    ) {
+    if (!id || !isUuid(id)) {
       throw new AppError(
         "El identificador del edificio debe ser un UUID válido",
         400,
