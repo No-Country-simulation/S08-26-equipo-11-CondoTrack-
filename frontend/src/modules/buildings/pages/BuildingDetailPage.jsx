@@ -154,7 +154,13 @@ export const BuildingDetailPage = () => {
           {!unitsLoading && !unitsLoadError && (
             <div className="ct-card p-3 d-flex flex-wrap gap-2">
               {units.map((unit) => (
-                <span key={unit.id} className="badge bg-light text-dark border px-2 py-2">{unit.label}</span>
+                <Link
+                  key={unit.id}
+                  to={`/dashboard/edificios/${id}/unidades/${unit.id}`}
+                  className="badge bg-light text-dark border px-2 py-2 text-decoration-none"
+                >
+                  {unit.label}
+                </Link>
               ))}
               {units.length === 0 && <span className="ct-text-muted">Sin unidades cargadas.</span>}
             </div>
