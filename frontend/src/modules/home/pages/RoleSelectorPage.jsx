@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/shared/components/Icon";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { canAccessProfile } from "@/modules/auth/constants/roles";
 import { RoleInfoModal } from "@/modules/home/components/RoleInfoModal";
 
 const PROFILES = [
@@ -23,8 +25,8 @@ const PROFILES = [
     icon: "person",
     accent: "var(--color-amber)",
     tileBackground: "#fff7ed",
-    available: false,
-    to: null,
+    available: true,
+    to: "/portal",
   },
   {
     key: "recepcion",
@@ -33,14 +35,20 @@ const PROFILES = [
     icon: "access",
     accent: "var(--color-green)",
     tileBackground: "var(--color-green-light)",
-    available: false,
-    to: null,
+    available: true,
+    to: "/recepcion",
   },
 ];
 
 export const RoleSelectorPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selected, setSelected] = useState(null);
+
+  // Cada rol ve solo su perfil: un RESIDENT nunca ve Administración.
+  const visibleProfiles = PROFILES.filter((profile) =>
+    canAccessProfile(profile.key, user?.role),
+  );
 
   const handleEnter = () => {
     if (selected?.to) {
@@ -61,7 +69,7 @@ export const RoleSelectorPage = () => {
       </div>
 
       <div className="d-flex gap-4 flex-wrap justify-content-center">
-        {PROFILES.map((profile) => (
+        {visibleProfiles.map((profile) => (
           <button
             key={profile.key}
             type="button"
@@ -80,6 +88,12 @@ export const RoleSelectorPage = () => {
             </div>
           </button>
         ))}
+        {visibleProfiles.length === 0 && (
+          <p className="ct-text-muted text-center mb-0" style={{ fontSize: "0.875rem", maxWidth: "28rem" }}>
+            Tu usuario no tiene un perfil asignado todavía. Pedí a tu
+            administrador que te asigne un rol y un edificio.
+          </p>
+        )}
       </div>
 
       <p className="ct-font-mono ct-text-faint mb-0" style={{ fontSize: "0.6875rem" }}>Torre Madero · Buenos Aires</p>
