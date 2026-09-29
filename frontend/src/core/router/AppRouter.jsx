@@ -11,15 +11,15 @@ const LoginPage = lazy(() =>
   })),
 );
 
-const CreateUserPage = lazy(() =>
-  import("@/modules/users/pages/CreateUserPage").then((module) => ({
-    default: module.CreateUserPage,
-  })),
-);
-
 const UsuariosPage = lazy(() =>
   import("@/modules/users/pages/UsuariosPage").then((module) => ({
     default: module.UsuariosPage,
+  })),
+);
+
+const UserDetailPage = lazy(() =>
+  import("@/modules/users/pages/UserDetailPage").then((module) => ({
+    default: module.UserDetailPage,
   })),
 );
 
@@ -226,10 +226,10 @@ export default function AppRouter() {
               }
             />
             <Route
-              path="usuarios/nuevo"
+              path="usuarios/:userId"
               element={
                 <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
-                  <CreateUserPage />
+                  <UserDetailPage />
                 </ProtectedRoute>
               }
             />
