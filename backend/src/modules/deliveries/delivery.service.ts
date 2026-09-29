@@ -93,4 +93,25 @@ export class DeliveryService {
 
     return this.repository.list(buildingId, filters);
   }
+  async listMine(filters: ListDeliveriesDto, actor: AuthenticatedUser) {
+    const isResident = actor.roles.some((role) => role.roleName === "RESIDENT");
+
+    if (!isResident) {
+      throw new AppError(
+        "Solo los residentes pueden consultar sus deliveries",
+        403,
+      );
+    }
+
+    const unitIds = await this.repository.findActiveUnitIdsForUser(
+      actor.id,
+      new Date(),
+    );
+
+    if (unitIds.length === 0) {
+      return [];
+    }
+
+    return this.repository.listMine(unitIds, filters);
+  }
 }

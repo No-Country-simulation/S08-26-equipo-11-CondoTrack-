@@ -120,4 +120,33 @@
  *       '404': { description: Edificio inexistente }
  */
 
+/**
+ * @openapi
+ * /api/deliveries/mine:
+ *   get:
+ *     tags: [Deliveries]
+ *     summary: Listar deliveries de las unidades del residente autenticado
+ *     description: >
+ *       Permite a un usuario con rol RESIDENT consultar únicamente
+ *       los deliveries correspondientes a sus unidades activas.
+ *       El alcance se determina a partir del usuario autenticado.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [RECEIVED, NOTIFIED, PICKED_UP, RETURNED, LOST]
+ *         description: Filtrar deliveries por estado
+ *     responses:
+ *       '200':
+ *         description: Lista de deliveries de las unidades del residente
+ *       '400':
+ *         description: Filtro inválido
+ *       '401':
+ *         description: JWT inválido o ausente
+ *       '403':
+ *         description: El usuario no tiene rol RESIDENT
+ */
+
 export {};
