@@ -8,6 +8,7 @@ import { UserBuildingRole } from "../modules/users-buildings-roles/user-building
 import { AuditLog } from "../modules/audit/audit.model.js";
 import { Person } from "../modules/people/people.model.js";
 import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
+import { AccessAuthorization } from "../modules/accesses/access-authorization.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
 
@@ -162,6 +163,14 @@ export function setupRelations(): void {
     as: "person",
   });
 
+  // AccessAuthorization <-> Building / Unit / Person / User
+  // un pase de acceso referencia edificio, unidad, visitante (Person) y a quien lo autorizo
+  Building.hasMany(AccessAuthorization, {
+    foreignKey: "buildingId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Building, {
   Building.hasMany(CommonArea, {
     foreignKey: "buildingId",
     as: "commonAreas",
@@ -170,6 +179,36 @@ export function setupRelations(): void {
   CommonArea.belongsTo(Building, {
     foreignKey: "buildingId",
     as: "building",
+  });
+
+  Unit.hasMany(AccessAuthorization, {
+    foreignKey: "unitId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(AccessAuthorization, {
+    foreignKey: "visitorId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Person, {
+    foreignKey: "visitorId",
+    as: "visitor",
+  });
+
+  User.hasMany(AccessAuthorization, {
+    foreignKey: "authorizedByUserId",
+    as: "authorizedAccessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(User, {
+    foreignKey: "authorizedByUserId",
+    as: "authorizedBy",
   });
 
   Building.hasMany(Reservation, {
@@ -212,7 +251,7 @@ export function setupRelations(): void {
     as: "requestedByUser",
   });
   // Sprint futuro: a medida que se sumen nuevas tablas (Amenities, Reservations,
-  // Deliveries, Visits, Incidents, Moves, Notifications...) agregar aca sus
+  // Deliveries, Incidents, Moves, Notifications...) agregar aca sus
   // relaciones siguiendo el mismo patron usado arriba: hasMany() del lado "padre"
   // + belongsTo() del lado "hijo", cada uno con foreignKey y as explicitos.
 }

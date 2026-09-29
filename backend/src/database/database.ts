@@ -9,6 +9,7 @@ import { UserBuildingRole } from "../modules/users-buildings-roles/user-building
 import { AuditLog } from "../modules/audit/audit.model.js";
 import { Person } from "../modules/people/people.model.js";
 import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
+import { AccessAuthorization } from "../modules/accesses/access-authorization.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
 
@@ -29,6 +30,7 @@ export const sequelize = new Sequelize(config.databaseUrl, {
     UserBuildingRole,
     Person,
     UnitPeople,
+    AccessAuthorization,
     CommonArea,
     Reservation,
   ],
