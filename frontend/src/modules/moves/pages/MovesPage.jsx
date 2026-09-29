@@ -1,9 +1,12 @@
+import { useOutletContext } from "react-router-dom";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useMoves } from "@/modules/moves/context/MovesContext";
 
 export const MovesPage = () => {
-  const { moves, updateStatus } = useMoves();
+  const { building } = useOutletContext();
+  const { forBuilding, updateStatus } = useMoves();
+  const moves = forBuilding(building?.id);
   const pending = moves.filter((m) => m.status === "pending");
   const confirmed = moves.filter((m) => m.status === "confirmed");
 
