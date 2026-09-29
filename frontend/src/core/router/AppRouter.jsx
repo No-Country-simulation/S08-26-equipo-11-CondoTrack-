@@ -87,6 +87,12 @@ const BuildingDetailPage = lazy(() =>
   })),
 );
 
+const UnitDetailPage = lazy(() =>
+  import("@/modules/units/pages/UnitDetailPage").then((m) => ({
+    default: m.UnitDetailPage,
+  })),
+);
+
 const DashboardHomePage = lazy(() =>
   import("@/modules/dashboard/pages/DashboardHomePage").then((m) => ({
     default: m.DashboardHomePage,
@@ -177,6 +183,10 @@ export default function AppRouter() {
             <Route
               path="edificios/:buildingId"
               element={<BuildingDetailPage />}
+            />
+            <Route
+              path="edificios/:buildingId/unidades/:unitId"
+              element={<UnitDetailPage />}
             />
             <Route index element={<DashboardHomePage />} />
           </Route>
