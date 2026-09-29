@@ -1,8 +1,13 @@
+import { useOutletContext } from "react-router-dom";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useReservations } from "@/modules/reservations/hooks/useReservations";
 
 export const ReservationsPage = () => {
-  const { reservations, spaces, hasReservation } = useReservations();
+  const { building } = useOutletContext();
+  const { spaces, forBuilding } = useReservations();
+  const reservations = forBuilding(building?.id);
+  const hasReservation = (spaceName) =>
+    reservations.some((r) => r.space === spaceName);
 
   return (
     <div className="ct-main-scroll">
