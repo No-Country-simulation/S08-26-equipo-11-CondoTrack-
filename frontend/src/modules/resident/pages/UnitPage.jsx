@@ -1,17 +1,46 @@
+import { useEffect, useState } from "react";
 import {
   AMENITIES,
   BUILDING_CONTACTS,
   BUILDING_RULES,
 } from "@/modules/resident/data/unit.data";
 import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident";
+import { listCommonAreas } from "@/modules/amenities/services/commonAreasService";
 
 export const UnitPage = () => {
   const current = useCurrentResident();
+  const [areas, setAreas] = useState(null);
+
+  // Amenities reales del edificio (el backend las expone al RESIDENT).
+  // Si falla o viene vacío, se muestran las de referencia locales.
+  useEffect(() => {
+    if (!current.buildingId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    listCommonAreas(current.buildingId)
+      .then((items) => {
+        if (!cancelled) setAreas(items);
+      })
+      .catch(() => {
+        if (!cancelled) setAreas([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [current.buildingId]);
+
+  const amenities = areas?.length ? areas.map((area) => area.name) : AMENITIES;
 
   const UNIT_STATS = [
     { label: "Edificios", val: current.building },
-    { label: "Piso", val: "8°" },
-    { label: "Tipo", val: "3 ambientes" },
+    {
+      label: "Piso",
+      val: current.unitFloor == null ? "—" : `${current.unitFloor}°`,
+    },
+    { label: "Tipo", val: current.unitType ?? "—" },
     { label: "Superficie", val: "82 m²" },
     { label: "Cochera", val: "Nro. 24" },
     { label: "Baulera", val: "Nro. 08" },
@@ -65,7 +94,7 @@ export const UnitPage = () => {
             </p>
           </div>
           <div className="p-3 d-flex flex-wrap gap-2">
-            {AMENITIES.map((amenity) => (
+            {amenities.map((amenity) => (
               <span
                 key={amenity}
                 className="badge rounded-pill fw-medium ct-text-muted"
