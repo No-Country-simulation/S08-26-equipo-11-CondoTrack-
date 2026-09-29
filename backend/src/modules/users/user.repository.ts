@@ -1,4 +1,4 @@
-import { Transaction } from "sequelize";
+import { Op, Transaction, WhereOptions } from "sequelize";
 
 import { AuditLog } from "../audit/audit.model.js";
 import { Building } from "../buildings/building.model.js";
@@ -56,6 +56,80 @@ export class UserRepository {
     return Role.findAll({
       where: { name: names },
       transaction,
+    });
+  }
+
+  findRoleDefinition(name: string) {
+    return Role.findOne({ where: { name } });
+  }
+
+  findUserIdsPage(
+    buildingId: string | null,
+    roleId: string | null,
+    limit: number,
+    offset: number,
+  ) {
+    const where: WhereOptions<UserBuildingRole> = {};
+
+    if (buildingId) {
+      where.buildingId = buildingId;
+    }
+
+    if (roleId) {
+      where.roleId = roleId;
+    }
+
+    return UserBuildingRole.findAndCountAll({
+      where,
+      attributes: ["userId"],
+      distinct: true,
+      col: "userId",
+      limit,
+      offset,
+      order: [["userId", "ASC"]],
+    });
+  }
+
+  findAssignments(
+    userIds: string[],
+    buildingId: string | null,
+    roleId: string | null,
+  ) {
+    return UserBuildingRole.findAll({
+      where: {
+        userId: { [Op.in]: userIds },
+        ...(buildingId ? { buildingId } : {}),
+        ...(roleId ? { roleId } : {}),
+      },
+      include: [
+        {
+          model: Role,
+          as: "role",
+          attributes: ["name"],
+        },
+      ],
+    });
+  }
+
+  findPublicUsersByIds(userIds: string[]) {
+    return User.findAll({
+      where: { id: { [Op.in]: userIds } },
+      attributes: ["id", "email", "status"],
+      include: [
+        {
+          model: Person,
+          as: "person",
+          attributes: [
+            "id",
+            "firstName",
+            "lastName",
+            "documentType",
+            "documentNumber",
+            "phone",
+          ],
+        },
+      ],
+      order: [["email", "ASC"]],
     });
   }
 

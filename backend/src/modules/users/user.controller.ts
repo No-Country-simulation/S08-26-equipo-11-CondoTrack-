@@ -2,7 +2,11 @@ import { RequestHandler } from "express";
 
 import catchAsync from "../../utils/catchAsync.js";
 import AppError from "../../utils/AppError.js";
-import { validateManage, validateProfile } from "./user.dto.js";
+import {
+  validateListUsers,
+  validateManage,
+  validateProfile,
+} from "./user.dto.js";
 import { UserService } from "./user.service.js";
 
 export class UserController {
@@ -22,6 +26,15 @@ export class UserController {
 
     return id;
   }
+
+  list: RequestHandler = catchAsync(async (req, res) => {
+    const data = await this.service.list(
+      validateListUsers(req.query as Record<string, unknown>),
+      req.authenticatedUser!,
+    );
+
+    res.json({ success: true, data });
+  });
 
   getById: RequestHandler = catchAsync(async (req, res) => {
     const data = await this.service.getById(

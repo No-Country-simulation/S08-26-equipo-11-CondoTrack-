@@ -5,6 +5,7 @@ import { authorizeUnitAdmin } from "../../middlewares/authorize-unit-admin.middl
 import visitsRoutes from "../accesses/access.routes.js";
 import { UnitController } from "./unit.controller.js";
 import { UnitService } from "./unit.service.js";
+import unitDeliveryRoutes from "../deliveries/unit-delivery.routes.js";
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.patch(
 );
 
 router.use("/:unitId/visits", visitsRoutes);
+router.use("/:unitId/deliveries", unitDeliveryRoutes);
 
 export default router;

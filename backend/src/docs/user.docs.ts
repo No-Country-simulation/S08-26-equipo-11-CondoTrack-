@@ -4,6 +4,62 @@
  *   - name: Users
  *     description: "RESIDENT consulta y edita su propio perfil; ADMIN consulta y gestiona usuarios dentro de sus edificios; SUPER_ADMIN tiene alcance global."
  *
+ * /api/users:
+ *   get:
+ *     tags: [Users]
+ *     summary: Listar usuarios con filtros por edificio y rol
+ *     description: "SUPER_ADMIN ve todos los usuarios y, si envía buildingId, filtra por él. ADMIN debe enviar buildingId y solo accede a edificios que tiene asignados (edificio ajeno devuelve 403)."
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: buildingId
+ *         required: false
+ *         schema: { type: string, format: uuid }
+ *         description: Obligatorio para ADMIN; opcional para SUPER_ADMIN
+ *       - in: query
+ *         name: role
+ *         required: false
+ *         schema: { type: string, enum: [RESIDENT, RECEPTION, MAINTENANCE] }
+ *         description: Filtra usuarios con ese rol
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema: { type: integer, minimum: 1, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+ *     responses:
+ *       '200':
+ *         description: Usuarios con información pública y metadata de paginación
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               data:
+ *                 items:
+ *                   - id: '00000000-0000-0000-0000-000000000001'
+ *                     email: persona@example.com
+ *                     status: ACTIVE
+ *                     person:
+ *                       id: '00000000-0000-0000-0000-000000000002'
+ *                       firstName: Ana
+ *                       lastName: Pérez
+ *                       documentType: DNI
+ *                       documentNumber: '12345678'
+ *                       phone: '+5491123456789'
+ *                     roles:
+ *                       - buildingId: '00000000-0000-0000-0000-000000000003'
+ *                         roleName: RESIDENT
+ *                 pagination:
+ *                   page: 1
+ *                   limit: 25
+ *                   totalItems: 1
+ *                   totalPages: 1
+ *       '400': { description: ADMIN sin buildingId, UUID inválido o parámetros inválidos }
+ *       '401': { description: No autorizado }
+ *       '403': { description: Edificio ajeno al ADMIN }
+ *
  * /api/users/{id}:
  *   get:
  *     tags: [Users]
