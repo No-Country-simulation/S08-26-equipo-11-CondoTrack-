@@ -61,4 +61,16 @@ export class DeliveryController {
       data,
     });
   });
+
+  mine: RequestHandler = catchAsync(async (req, res) => {
+    const data = await this.service.listMine(
+      validateListDeliveries(req.query),
+      req.authenticatedUser!,
+    );
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  });
 }

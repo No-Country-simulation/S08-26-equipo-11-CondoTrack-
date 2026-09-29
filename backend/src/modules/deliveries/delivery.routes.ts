@@ -11,6 +11,7 @@ const controller = new DeliveryController(
   new DeliveryService(new DeliveryRepository()),
 );
 
+router.get("/mine", authenticate, controller.mine);
 router.patch("/:id/deliver", authenticate, controller.deliver);
 
 export default router;
