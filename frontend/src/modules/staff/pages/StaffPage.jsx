@@ -43,7 +43,7 @@ export const StaffPage = () => {
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
-            onClick={() => navigate("/dashboard/usuarios/nuevo")}
+            onClick={() => navigate("/dashboard/usuarios")}
           >
             <Icon name="plus" size={14} />
             Crear usuario

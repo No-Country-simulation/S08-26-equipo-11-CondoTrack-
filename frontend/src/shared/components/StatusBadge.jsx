@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 const STATUS_CONFIG = {
   active: { label: "Activo", tone: "green" },
   inactive: { label: "Inactivo", tone: "muted" },
+  blocked: { label: "Bloqueado", tone: "red" },
   ok: { label: "OK", tone: "green" },
   denied: { label: "Denegado", tone: "red" },
   pending: { label: "Pendiente", tone: "amber" },

@@ -22,6 +22,19 @@ export const unwrapPage = (response) => {
   return { items, pagination: body?.pagination ?? null };
 };
 
-// Mensaje legible de un error axios (usa el `message` del backend).
-export const apiErrorMessage = (error, fallback) =>
-  error?.response?.data?.message ?? fallback;
+// Mensaje legible de un error: usa el `message` del backend si respondió,
+// el <fallback>  </fallback> si no hubo respuesta (red/servidor), o el mensaje propio si
+// es un error local (ej. validación previa al request).
+export const apiErrorMessage = (error, fallback) => {
+  if (!error) return fallback;
+  if (error.response) return error.response.data?.message ?? fallback;
+  if (error.request) return fallback;
+  return error.message || fallback;
+};
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Valida formato UUID (el backend lo exige en ids y buildingId).
+export const isUuid = (value) =>
+  typeof value === "string" && UUID_REGEX.test(value);
