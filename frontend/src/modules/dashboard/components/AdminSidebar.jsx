@@ -4,6 +4,8 @@ import PropTypes from "prop-types";
 import { Icon } from "@/shared/components/Icon";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
+import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 
 const NAV_ITEMS = [
   { to: "/dashboard", end: true, label: "Dashboard", icon: "dashboard" },
@@ -12,11 +14,11 @@ const NAV_ITEMS = [
   { to: "/dashboard/personal", label: "Personal", icon: "person" },
   { to: "/dashboard/usuarios", label: "Usuarios", icon: "user-plus" },
   { to: "/dashboard/accesos", label: "Accesos", icon: "access" },
-  { to: "/dashboard/deliveries", label: "Deliveries", icon: "deliveries", badge: 3 },
+  { to: "/dashboard/deliveries", label: "Deliveries", icon: "deliveries", badgeKey: "pendingDeliveries" },
   { to: "/dashboard/reservas", label: "Reservas", icon: "reservations" },
   { to: "/dashboard/mudanzas", label: "Mudanzas", icon: "move" },
   { to: "/dashboard/mantenimiento", label: "Mantenimiento", icon: "maintenance" },
-  { to: "/dashboard/incidentes", label: "Incidentes", icon: "incidents", badge: 2 },
+  { to: "/dashboard/incidentes", label: "Incidentes", icon: "incidents", badgeKey: "openIncidents" },
   { to: "/dashboard/comunicaciones", label: "Comunicaciones", icon: "notification" },
   { to: "/dashboard/actividad", label: "Actividad", icon: "clock" },
   { to: "/dashboard/perfil", label: "Mi perfil", icon: "person" },
@@ -28,6 +30,14 @@ export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const current = getBuildingById(selectedBuildingId);
+  // Los badges se calculan desde los contextos ya cargados: ambos autofetchean
+  // los edificios, así que acá no se dispara ningún request extra.
+  const { pendingForBuilding } = useDeliveries();
+  const { openForBuilding } = useIncidents();
+  const badgeCounts = {
+    pendingDeliveries: pendingForBuilding(selectedBuildingId).length,
+    openIncidents: openForBuilding(selectedBuildingId).length,
+  };
 
   const displayName =
     `${user?.nombre ?? ""} ${user?.apellido ?? ""}`.trim() ||
@@ -91,7 +101,9 @@ export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {
           >
             <Icon name={item.icon} size={15} />
             {item.label}
-            {item.badge && <span className="ct-sidebar-badge">{item.badge}</span>}
+            {item.badgeKey && badgeCounts[item.badgeKey] > 0 && (
+              <span className="ct-sidebar-badge">{badgeCounts[item.badgeKey]}</span>
+            )}
           </NavLink>
         ))}
       </nav>
