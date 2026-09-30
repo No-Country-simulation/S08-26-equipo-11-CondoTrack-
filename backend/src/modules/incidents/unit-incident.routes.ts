@@ -5,7 +5,7 @@ import { IncidentController } from "./incident.controller.js";
 import { IncidentRepository } from "./incident.repository.js";
 import { IncidentService } from "./incident.service.js";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 const incidentRepository = new IncidentRepository();
 const incidentService = new IncidentService(incidentRepository);
