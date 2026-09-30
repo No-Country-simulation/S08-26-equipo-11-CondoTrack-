@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from "react";
 import PropTypes from "prop-types";
-import { MOVES } from "@/modules/moves/data/moves.data";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
@@ -14,7 +13,9 @@ const STATUS_LABELS = {
 };
 
 export function MovesProvider({ children }) {
-  const [moves, setMoves] = useState(MOVES);
+  // Sin endpoint de mudanzas: la lista arranca vacía en vez de sembrar
+  // solicitudes ficticias. Lo que el usuario ve es solo lo que creó en la sesión.
+  const [moves, setMoves] = useState([]);
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
   const { notify } = useNotificationsStore();
