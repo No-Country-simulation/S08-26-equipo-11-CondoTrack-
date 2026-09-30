@@ -11,6 +11,7 @@ import { AccessEvent } from "../modules/accesses/access-event.model.js";
 import { CommonArea } from "../modules/common-areas/common-area.model.js";
 import { Reservation } from "../modules/reservations/reservation.model.js";
 import { Incident } from "../modules/incidents/incident.model.js";
+import { Delivery } from "../modules/deliveries/delivery.model.js";
 
 export function setupRelations(): void {
   User.hasMany(UserBuildingRole, {
@@ -319,5 +320,54 @@ export function setupRelations(): void {
   AccessEvent.belongsTo(User, {
     foreignKey: "registeredByUserId",
     as: "registeredBy",
+  });
+  Building.hasMany(Delivery, {
+    foreignKey: "buildingId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(Delivery, {
+    foreignKey: "unitId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(Delivery, {
+    foreignKey: "recipientPersonId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Person, {
+    foreignKey: "recipientPersonId",
+    as: "recipient",
+  });
+
+  User.hasMany(Delivery, {
+    foreignKey: "receivedByUserId",
+    as: "receivedDeliveries",
+  });
+
+  Delivery.belongsTo(User, {
+    foreignKey: "receivedByUserId",
+    as: "receivedBy",
+  });
+
+  User.hasMany(Delivery, {
+    foreignKey: "pickedUpByUserId",
+    as: "pickedUpDeliveries",
+  });
+
+  Delivery.belongsTo(User, {
+    foreignKey: "pickedUpByUserId",
+    as: "pickedUpBy",
   });
 }
