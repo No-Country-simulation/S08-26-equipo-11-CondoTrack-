@@ -13,17 +13,33 @@ import { apiErrorMessage } from "@/core/api/api";
  * `RESIDENT` queda fuera a propósito, los residentes se gestionan en
  * /dashboard/residentes.
  */
-export const STAFF_ROLE_NAMES = [ROLES.RECEPTION, ROLES.MAINTENANCE, ROLES.ADMIN];
+
+/**
+ * El query param `role` de GET /users solo acepta estos tres valores:
+ * `Invalid option: expected one of "RESIDENT"|"RECEPTION"|"MAINTENANCE"`.
+ * Mandar ADMIN o SUPER_ADMIN hace fallar la petición entera, así que los
+ * administradores no se pueden filtrar desde el servidor.
+ */
+const QUERYABLE_STAFF_ROLES = [ROLES.RECEPTION, ROLES.MAINTENANCE];
+
+/**
+ * Roles que no se pueden pedir por query param. Se detectan con una consulta
+ * amplia del edificio y filtrando en cliente.
+ */
+const CLIENT_SIDE_STAFF_ROLES = [ROLES.ADMIN, ROLES.SUPER_ADMIN];
+
+const STAFF_ROLES = [...QUERYABLE_STAFF_ROLES, ...CLIENT_SIDE_STAFF_ROLES];
 
 // El listado de usuarios se pagina de a 5 en /dashboard/usuarios porque es
-// una tabla con búsqueda. Acá se necesitan todas las filas del edificio para
-// contar el personal, así que se pide un límite alto.
+// una tabla con búsqueda. Acá se necesitan todas las filas para contar el
+// personal, así que se pide un límite alto.
 const STAFF_LIMIT = 100;
 
 const ROLE_LABELS = {
   [ROLES.RECEPTION]: "Recepcionista / Portero",
   [ROLES.MAINTENANCE]: "Mantenimiento",
   [ROLES.ADMIN]: "Administrador",
+  [ROLES.SUPER_ADMIN]: "Administrador",
 };
 
 /**
@@ -36,15 +52,14 @@ const ROLE_LABELS = {
 const rolesForBuilding = (roles, buildingId) =>
   roles.filter(
     (entry) =>
-      STAFF_ROLE_NAMES.includes(entry.roleName) &&
+      STAFF_ROLES.includes(entry.roleName) &&
       (!buildingId || entry.buildingId === buildingId),
   );
 
 /**
  * Devuelve el personal de un edificio a partir del endpoint de usuarios.
  *
- * @param {string} buildingId  Edificio a filtrar. Si viene vacío devuelve
- *                             todo el personal operativo, sin edificio.
+ * @param {string} buildingId  Edificio a filtrar.
  */
 export function useStaffByRole(buildingId) {
   const [staff, setStaff] = useState([]);
@@ -61,24 +76,41 @@ export function useStaffByRole(buildingId) {
     setError("");
 
     try {
-      // Una consulta por rol para aprovechar el filtro del backend. Un mismo
-      // usuario con dos roles operativos vuelve dos veces, se deduplica.
-      const results = await Promise.all(
-        STAFF_ROLE_NAMES.map((roleName) =>
+      const results = await Promise.allSettled([
+        // Una consulta por rol filtrable para aprovechar el backend.
+        ...QUERYABLE_STAFF_ROLES.map((roleName) =>
           listUsers({ buildingId, role: roleName, limit: STAFF_LIMIT }),
         ),
-      );
+        // Consulta amplia del edificio: es la única forma de ubicar a los
+        // administradores, porque `role=ADMIN` el backend lo rechaza. Viene
+        // también con los residentes, que se descartan en rolesForBuilding.
+        listUsers({ buildingId, limit: STAFF_LIMIT }),
+      ]);
+
+      const rejected = results.filter((entry) => entry.status === "rejected");
+
+      // Solo es un error real si no respondió ninguna consulta.
+      if (results.length === rejected.length) {
+        throw rejected[0].reason;
+      }
 
       const byId = new Map();
 
-      for (const result of results) {
-        for (const user of result.users) {
+      for (const entry of results) {
+        if (entry.status !== "fulfilled") continue;
+
+        for (const user of entry.value.users) {
           const roles = rolesForBuilding(user.roles, buildingId);
           if (roles.length === 0) continue;
 
+          // Un mismo usuario puede aparecer en varias consultas: se le
+          // acumulan los roles en vez de duplicarlo.
           const existing = byId.get(user.id);
           if (existing) {
-            existing.roles.push(...roles);
+            const seen = new Set(existing.roles.map((role) => role.roleName));
+            existing.roles.push(
+              ...roles.filter((role) => !seen.has(role.roleName)),
+            );
             continue;
           }
 
@@ -96,7 +128,8 @@ export function useStaffByRole(buildingId) {
             status: member.status,
             roles: member.roles,
             role: member.roles[0].roleName,
-            roleLabel: ROLE_LABELS[member.roles[0].roleName] ?? member.roles[0].roleName,
+            roleLabel:
+              ROLE_LABELS[member.roles[0].roleName] ?? member.roles[0].roleName,
           }))
           .sort((a, b) => a.name.localeCompare(b.name, "es")),
       );
