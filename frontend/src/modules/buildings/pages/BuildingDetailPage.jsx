@@ -12,7 +12,7 @@ import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { listCommonAreas } from "@/modules/amenities/services/commonAreasService";
 import { useResidents } from "@/modules/residents/hooks/useResidents";
 import { useUnits } from "@/modules/units/context/UnitsContext";
-import { useStaff } from "@/modules/staff/context/StaffContext";
+import { useStaffByRole } from "@/modules/staff/hooks/useStaffByRole";
 import { useAccessLogs } from "@/modules/access/hooks/useAccessLogs";
 import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
 import { useReservations } from "@/modules/reservations/hooks/useReservations";
@@ -27,8 +27,6 @@ import { UnitsModal } from "@/modules/units/components/UnitsModal";
 import { AmenitiesModal } from "@/modules/amenities/components/AmenitiesModal";
 import { EditBuildingModal } from "@/modules/buildings/components/EditBuildingModal";
 
-const STAFF_ROLE_LABELS = { receptionist: "Recepcionista / Portero", maintenance: "Mantenimiento" };
-
 export const BuildingDetailPage = () => {
   const { buildingId } = useParams();
   // El backend usa UUID string: NO convertir a Number.
@@ -42,7 +40,7 @@ export const BuildingDetailPage = () => {
   const { forBuilding: residentsForBuilding } = useResidents();
   const { refreshBuilding: refreshResidents } = useResidentsStore();
   const { forBuilding: unitsForBuilding, fetchUnits, isUnitsLoading, unitsError, getUnitsTotal } = useUnits();
-  const { forBuilding: staffForBuilding } = useStaff();
+  const { staff } = useStaffByRole(id);
   const { forBuilding: accessForBuilding } = useAccessLogs();
   const { forBuilding: deliveriesForBuilding } = useDeliveries();
   const { forBuilding: reservationsForBuilding, fetchBuilding: fetchReservations } = useReservations();
@@ -122,7 +120,7 @@ export const BuildingDetailPage = () => {
   const unitsLoading = isUnitsLoading(id);
   const unitsLoadError = unitsError(id);
   const unitsTotal = getUnitsTotal(id);
-  const staff = staffForBuilding(id);
+
   const accessLogs = accessForBuilding(id);
   const deliveries = deliveriesForBuilding(id);
   const reservations = reservationsForBuilding(id);
@@ -259,8 +257,12 @@ export const BuildingDetailPage = () => {
                 <div>
                   <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{member.name}</p>
                   <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>
-                    {STAFF_ROLE_LABELS[member.role]}
-                    {member.role === "maintenance" ? ` · ${member.staffType === "externo" ? "Empresa externa" : "Personal interno"}` : ""}
+                    {member.roleLabel}
+                    {member.roles.length > 1 && (
+                      <span className="ct-text-faint ms-1" style={{ fontSize: "0.75rem" }}>
+                        +{member.roles.length - 1}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
