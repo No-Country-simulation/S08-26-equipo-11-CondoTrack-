@@ -16,7 +16,7 @@ export const ResidentHomePage = () => {
   const { forResident } = useAccessLogs();
   const { notifications, unreadCount, iconFor, markRead } = useNotifications();
   const current = useCurrentResident();
-  const { forUnit: deliveriesForUnit } = useDeliveries();
+  const { mine: myDeliveries } = useDeliveries();
   const { forMine } = useReservations();
   const { forResident: myIncidents } = useIncidents();
   const { forUnit: maintenanceForUnit } = useMaintenance();
@@ -25,13 +25,18 @@ export const ResidentHomePage = () => {
 
   // Los tres accesos contaban con valores fijos (siempre 1). Ahora salen del
   // backend: un resident sin nada pendiente ve 0, no un número inventado.
-  const pendingDeliveries = deliveriesForUnit(current.unit).filter(
+  // El aviso se arma con GET /deliveries/mine, no filtrando por código de
+  // unidad: el backend ya resuelve las unidades del residente, así que le
+  // aparece aunque entre desde otro navegador o en una sesión nueva.
+  const waitingDeliveries = myDeliveries.filter(
     (delivery) =>
       delivery.status === "RECEIVED" ||
       delivery.status === "NOTIFIED" ||
       delivery.status === "pending" ||
       delivery.status === "notified",
-  ).length;
+  );
+
+  const pendingDeliveries = waitingDeliveries.length;
 
   const upcomingReservations = forMine().filter((reservation) => {
     if (!ACTIVE_RESERVATION_STATUSES.includes(reservation.status)) return false;
@@ -104,6 +109,40 @@ export const ResidentHomePage = () => {
             : "No tenés una unidad asignada. Pedí al administrador que vincule tu cuenta."}
         </p>
       </div>
+
+      {waitingDeliveries.length > 0 && (
+        <div
+          className="ct-card p-4 d-flex flex-column flex-sm-row align-items-sm-center gap-3 mb-4"
+          style={{
+            borderLeft: "3px solid var(--color-amber)",
+            background: "var(--color-amber-light)",
+          }}
+        >
+          <div className="flex-grow-1">
+            <p
+              className="mb-0 fw-semibold"
+              style={{ color: "var(--color-ink)" }}
+            >
+              {waitingDeliveries.length === 1
+                ? "Tenés 1 paquete en portería"
+                : `Tenés ${waitingDeliveries.length} paquetes en portería`}
+            </p>
+            <p className="ct-text-muted mb-0 mt-1" style={{ fontSize: "0.8125rem" }}>
+              {waitingDeliveries
+                .map((delivery) => delivery.carrier)
+                .filter(Boolean)
+                .join(" · ") || "Pasá a retirarlo cuando quieras."}
+            </p>
+          </div>
+          <Link
+            to="/portal/deliveries"
+            className="btn text-white flex-shrink-0"
+            style={{ background: "var(--color-amber)" }}
+          >
+            Pasá por portería
+          </Link>
+        </div>
+      )}
 
       <div className="row g-4">
         <div className="col-lg-4 d-flex flex-column gap-4">
