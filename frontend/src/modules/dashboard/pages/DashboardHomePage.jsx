@@ -57,7 +57,7 @@ export const DashboardHomePage = () => {
       <div className="ct-grid-kpi mb-4">
         <KpiCard label="Residentes activos" value={activeResidents.length} sub={`${residents.length} totales`} accent="var(--color-accent-light)" icon="residents" />
         <KpiCard label="Ingresos hoy" value={logs.filter((l) => l.direction === "Ingreso").length} sub={`${deniedCount} denegados`} accent="var(--color-green-light)" icon="access" />
-        <KpiCard label="Deliveries pendientes" value={pendingDeliveries.length} sub={`${pendingDeliveries.length - notified.length} sin notificar`} accent="var(--color-amber-light)" icon="deliveries" />
+        <KpiCard label="Deliveries pendientes" value={pendingDeliveries.length} sub={`${notified.length} notificado(s)`} accent="var(--color-amber-light)" icon="deliveries" />
         <KpiCard label="Incidentes abiertos" value={openIncidents.length} sub={`${criticalIncidents.length} crítico(s)`} accent="var(--color-red-light)" icon="incidents" />
         <KpiCard label="Mudanzas pendientes" value={pendingMoves.length} sub={`${moves.length} totales`} accent="var(--color-purple-light)" icon="move" />
         <KpiCard label="Personal registrado" value={staff.length} sub="Recepción, mantenimiento y administración" accent="var(--color-accent-light)" icon="person" />
