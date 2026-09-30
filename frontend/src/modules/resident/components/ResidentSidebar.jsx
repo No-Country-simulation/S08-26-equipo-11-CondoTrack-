@@ -6,11 +6,12 @@ import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident"
 const NAV_ITEMS = [
   { to: "/portal", end: true, label: "Inicio", icon: "dashboard" },
   { to: "/portal/visitas", label: "Visitas & QR", icon: "qr" },
-  { to: "/portal/deliveries", label: "Mis deliveries", icon: "deliveries", badge: 1 },
+  { to: "/portal/deliveries", label: "Mis deliveries", icon: "deliveries" },
   { to: "/portal/reservas", label: "Reservas", icon: "reservations" },
   { to: "/portal/mudanzas", label: "Mudanzas", icon: "move" },
-  { to: "/portal/solicitudes", label: "Solicitudes", icon: "maintenance", badge: 1 },
+  { to: "/portal/solicitudes", label: "Solicitudes", icon: "maintenance" },
   { to: "/portal/unidad", label: "Mi unidad", icon: "buildings" },
+  { to: "/portal/perfil", label: "Mi perfil", icon: "person" },
 ];
 
 export const ResidentSidebar = () => {

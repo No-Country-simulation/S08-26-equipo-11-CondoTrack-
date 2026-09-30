@@ -26,6 +26,16 @@ const STATUS_CONFIG = {
   high: { label: "Alta", tone: "red" },
   medium: { label: "Media", tone: "amber" },
   low: { label: "Baja", tone: "green" },
+  // Estados de incidentes.
+  LOW: { label: "Baja", tone: "green" },
+  MEDIUM: { label: "Media", tone: "amber" },
+  HIGH: { label: "Alta", tone: "red" },
+  CRITICAL: { label: "Crítica", tone: "red" },
+  OPEN: { label: "Abierto", tone: "red" },
+  IN_PROGRESS: { label: "En progreso", tone: "purple" },
+  RESOLVED: { label: "Resuelto", tone: "muted" },
+  CLOSED: { label: "Cerrado", tone: "muted" },
+  READ: { label: "Leída", tone: "accent" },
 };
 
 export const StatusBadge = ({ status }) => {

@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Alert, Button, Form } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
-import { canManageBuildingResources } from "@/modules/auth/constants/roles";
+import { canHandleDeliveries } from "@/modules/auth/constants/roles";
 import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
 import { listUnits } from "@/modules/units/services/unitsService";
 import { listUnitResidents } from "@/modules/residents/services/residentsService";
@@ -47,7 +47,9 @@ export const DeliveriesPage = () => {
 
   const { forBuilding, registerDelivery, markPickedUp, isLoading, getError } =
     useDeliveries();
-  const canRegister = canManageBuildingResources(user?.role) && !!buildingId;
+  // La portería también registra los paquetes que llegan: el backend acepta
+  // RECEPTION en create/deliver (canHandle), antes la UI se lo negaba.
+  const canRegister = canHandleDeliveries(user?.role) && !!buildingId;
 
   const [statusFilter, setStatusFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -61,8 +63,12 @@ export const DeliveriesPage = () => {
   const [saving, setSaving] = useState(false);
   const fetchedUnitsRef = useRef(new Set());
 
-  const deliveries = forBuilding(buildingId).filter(
-    (d) => !statusFilter || d.status === statusFilter,
+  const deliveries = useMemo(
+    () =>
+      forBuilding(buildingId).filter(
+        (d) => !statusFilter || d.status === statusFilter,
+      ),
+    [forBuilding, buildingId, statusFilter],
   );
   const loading = isLoading(buildingId);
   const loadError = getError(buildingId);
@@ -102,38 +108,63 @@ export const DeliveriesPage = () => {
     };
   }, [form.unitId, units]);
 
-  // Resuelve nombres de destinatarios para las filas visibles.
+  // Fallback: si el listado vino sin nombre de destinatario (por ejemplo
+  // porque la unidad ya no responde), se cruza contra los residentes.
   useEffect(() => {
     const missingUnitIds = [
       ...new Set(
         deliveries
-          .filter((d) => d.recipientPersonId && !personMap[d.recipientPersonId])
+          .filter(
+            (d) =>
+              d.recipientPersonId &&
+              !d.resident &&
+              !personMap[d.recipientPersonId],
+          )
           .map((d) => d.unitId)
           .filter(Boolean),
       ),
     ].filter((unitId) => !fetchedUnitsRef.current.has(unitId));
+
     if (!missingUnitIds.length) return undefined;
 
-    let cancelled = false;
+    const inFlight = missingUnitIds;
     missingUnitIds.forEach((unitId) => fetchedUnitsRef.current.add(unitId));
+
+    let cancelled = false;
     Promise.all(
       missingUnitIds.map((unitId) =>
-        listUnitResidents({ id: unitId }).catch(() => []),
+        listUnitResidents({ id: unitId }).catch(() => null),
       ),
     ).then((lists) => {
-      if (cancelled) return;
-      const map = {};
-      lists.flat().forEach((row) => {
-        const key = row.personId ?? row.userId;
-        if (key && row.name) map[key] = row.name;
+      if (cancelled) {
+        // Libera las unidades para que otro intento las vuelva a consultar.
+        inFlight.forEach((unitId) => fetchedUnitsRef.current.delete(unitId));
+        return;
+      }
+
+      // Una consulta fallida no debe quedar cacheada: se libera para reintentar.
+      lists.forEach((list, index) => {
+        if (list === null) {
+          fetchedUnitsRef.current.delete(inFlight[index]);
+        }
       });
+
+      const map = {};
+      lists
+        .filter(Boolean)
+        .flat()
+        .forEach((row) => {
+          const key = row.personId ?? row.userId;
+          if (key && row.name) map[key] = row.name;
+        });
+
       setPersonMap((prev) => ({ ...prev, ...map }));
     });
+
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- personMap es caché de solo lectura acá
-  }, [deliveries]);
+  }, [deliveries, personMap]);
 
   const updateField = (field) => (event) => {
     setForm((prev) => {
@@ -423,8 +454,9 @@ export const DeliveriesPage = () => {
           )}
           {deliveries.map((delivery) => {
             const recipient =
-              personMap[delivery.recipientPersonId] ??
-              (delivery.resident || "Destinatario");
+              personMap[delivery.recipientPersonId] ||
+              delivery.resident ||
+              "Destinatario";
             const canDeliver = [
               "RECEIVED",
               "NOTIFIED",
@@ -460,8 +492,8 @@ export const DeliveriesPage = () => {
                     className="ct-font-mono ct-text-faint mb-0 mt-1"
                     style={{ fontSize: "0.6875rem" }}
                   >
-                    {codeOfUnit(units, delivery.unitId)
-                      ? `Unidad ${codeOfUnit(units, delivery.unitId)} · `
+                    {codeOfUnit(units, delivery.unitId) || delivery.unit
+                      ? `Unidad ${codeOfUnit(units, delivery.unitId) || delivery.unit} · `
                       : ""}
                     {delivery.trackingNumber || "Sin seguimiento"}
                   </p>

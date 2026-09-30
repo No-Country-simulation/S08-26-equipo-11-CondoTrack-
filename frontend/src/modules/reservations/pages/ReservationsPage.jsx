@@ -147,16 +147,24 @@ export const ReservationsPage = () => {
             <table className="ct-table mb-0">
               <thead>
                 <tr>
-                  {["Espacio", "Inicio", "Fin", "Notas", "Estado"].map((header) => (
-                    <th key={header}>{header}</th>
-                  ))}
+                  {["Espacio", "Unidad", "Residente", "Inicio", "Fin", "Notas", "Estado"].map(
+                    (header) => (
+                      <th key={header}>{header}</th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {reservations.map((reservation) => (
                   <tr key={reservation.id}>
                     <td className="fw-medium" style={{ color: "var(--color-ink)" }}>
-                      {areaNameOf(reservation.commonAreaId)}
+                      {reservation.space || areaNameOf(reservation.commonAreaId)}
+                    </td>
+                    <td className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem" }}>
+                      {reservation.unit || "—"}
+                    </td>
+                    <td className="ct-text-muted" style={{ fontSize: "0.75rem" }}>
+                      {reservation.resident || reservation.residentEmail || "—"}
                     </td>
                     <td className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem" }}>
                       {formatDateTime(reservation.startAt)}

@@ -17,7 +17,9 @@ import {
 
 const BuildingsContext = createContext(null);
 
-// El backend solo lista edificios a SUPER_ADMIN y ADMIN (el resto recibe 403).
+// El backend lista edificios a SUPER_ADMIN, ADMIN y RECEPTION (el resto recibe
+// 403). Para RECEPTION devuelve solo los suyos vía resolveBuildingScope, que es
+// lo que necesita la portería para operar accesos y deliveries.
 // Tolera roles como string ("ADMIN") u objeto ({ roleName: "ADMIN" }).
 const canViewBuildings = (user) => {
   const names = [
@@ -30,7 +32,10 @@ const canViewBuildings = (user) => {
   ].filter(Boolean);
 
   return names.some(
-    (name) => name === ROLES.SUPER_ADMIN || name === ROLES.ADMIN,
+    (name) =>
+      name === ROLES.SUPER_ADMIN ||
+      name === ROLES.ADMIN ||
+      name === ROLES.RECEPTION,
   );
 };
 

@@ -1,9 +1,13 @@
+import { useState } from "react";
+import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
+import { useIncidentsStore } from "@/modules/incidents/context/IncidentsContext";
 import { useRequestsTabs } from "@/modules/resident/hooks/useRequestsTabs";
 import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident";
+import { apiErrorMessage } from "@/core/api/api";
 
 const MAINTENANCE_CATEGORIES = ["Plomería", "Electricidad", "Climatización", "Estructura", "Otro"];
 const INCIDENT_CATEGORIES = ["Convivencia", "Seguridad", "Daños", "Limpieza", "Otro"];
@@ -12,10 +16,58 @@ export const RequestsPage = () => {
   const { forUnit } = useMaintenance();
   const { forResident } = useIncidents();
   const { tab, setTab, showForm, setShowForm, form, updateField, submit } = useRequestsTabs();
+  const { reportIncident } = useIncidentsStore();
   const current = useCurrentResident();
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
+  // Reporte real de incidentes (POST /buildings/:id/units/:unitId/incidents).
+  // Requiere RESIDENT vinculado a la unidad; mantenimiento sigue mock.
+  const handleSubmit = async () => {
+    setSubmitError("");
+    setSubmitSuccess("");
+
+    if (tab !== "incidentes") {
+      submit();
+      return;
+    }
+
+    if (!form.title.trim() || !form.description.trim()) {
+      setSubmitError("Completá título y descripción.");
+      return;
+    }
+
+    if (!current.unitId || !current.buildingId) {
+      setSubmitError("Tu usuario no tiene una unidad asignada.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const severity =
+        form.priority === "high"
+          ? "HIGH"
+          : form.priority === "low"
+            ? "LOW"
+            : "MEDIUM";
+      await reportIncident(current.buildingId, current.unitId, {
+        title: form.title,
+        description: `[${form.category || "General"}] ${form.description}`,
+        severity,
+      });
+      setSubmitSuccess("Incidente reportado. La administración lo revisará.");
+      submit();
+    } catch (err) {
+      setSubmitError(
+        apiErrorMessage(err, "No se pudo reportar el incidente."),
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
   const myMaintenance = forUnit(current.unit);
-  const myIncidents = forResident(current.name);
+  const myIncidents = forResident();
   const categories = tab === "mantenimiento" ? MAINTENANCE_CATEGORIES : INCIDENT_CATEGORIES;
 
   return (
@@ -98,13 +150,29 @@ export const RequestsPage = () => {
             </div>
           </div>
           <div className="d-flex gap-2">
-            <button type="button" className="btn btn-sm text-white" style={{ background: "var(--color-accent)" }} onClick={submit}>
-              Enviar solicitud
+            <button
+              type="button"
+              className="btn btn-sm text-white"
+              style={{ background: "var(--color-accent)" }}
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? "Enviando..." : "Enviar solicitud"}
             </button>
             <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowForm(false)}>
               Cancelar
             </button>
           </div>
+          {submitError && (
+            <Alert variant="danger" className="py-2 small mt-3 mb-0">
+              {submitError}
+            </Alert>
+          )}
+          {submitSuccess && (
+            <Alert variant="success" className="py-2 small mt-3 mb-0">
+              {submitSuccess}
+            </Alert>
+          )}
         </div>
       )}
 
@@ -132,10 +200,19 @@ export const RequestsPage = () => {
                 <div className="d-flex align-items-start justify-content-between gap-3">
                   <div>
                     <p className="ct-font-mono text-uppercase ct-text-faint mb-1" style={{ fontSize: "10px", letterSpacing: "0.05em" }}>
-                      #{String(incident.id).padStart(3, "0")} · {incident.category}
+                      {incident.category ? incident.category : incident.severity}
                     </p>
                     <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{incident.title}</p>
-                    <p className="ct-font-mono ct-text-muted mb-0 mt-2" style={{ fontSize: "0.75rem" }}>{incident.unit} · {incident.reported}</p>
+                    <p className="ct-font-mono ct-text-muted mb-0 mt-2" style={{ fontSize: "0.75rem" }}>
+                      {incident.reported
+                        ? new Date(incident.reported).toLocaleString("es-AR", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </p>
                   </div>
                   <div className="d-flex align-items-center gap-2 flex-shrink-0">
                     <StatusBadge status={incident.severity} />
