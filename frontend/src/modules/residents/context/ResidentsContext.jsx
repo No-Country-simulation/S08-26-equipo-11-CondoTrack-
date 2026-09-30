@@ -17,6 +17,7 @@ import {
   listUnitResidents,
 } from "@/modules/residents/services/residentsService";
 import { apiErrorMessage } from "@/core/api/api";
+import { isValidEmail, normalizeEmail } from "@/shared/utils/validators";
 
 const ResidentsContext = createContext(null);
 
@@ -121,40 +122,40 @@ export function ResidentsProvider({ children }) {
   // Vincula una cuenta existente como residente (POST /units/:id/residents).
   // El backend solo pide { email }: la unidad se resuelve por código.
   const addResident = async ({
-    name,
     buildingId,
     buildingName,
-    unit,
+    unitId,
+    unitCode,
     email,
     phone,
     type,
   }) => {
-    const trimmedUnit = unit.trim();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = normalizeEmail(email);
 
-    if (!name.trim() || !trimmedUnit || !buildingId || !trimmedEmail) {
+    if (!unitId || !buildingId || !trimmedEmail) {
       return {
         success: false,
-        error: "Completá nombre, edificio, unidad y email.",
+        error: "Completá edificio, unidad y email.",
+      };
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      return {
+        success: false,
+        error: "El email no tiene un formato válido.",
       };
     }
 
     try {
-      const { units } = await listUnits(buildingId);
-      const target = units.find(
-        (item) => item.code.toLowerCase() === trimmedUnit.toLowerCase(),
+      // El id de la unidad viene del selector, que ya la cargó del backend:
+      // no hace falta volver a listar y casar por código.
+      const row = await linkResident(
+        { id: unitId, code: unitCode, buildingId },
+        trimmedEmail,
       );
-
-      if (!target) {
-        return {
-          success: false,
-          error: `La unidad "${trimmedUnit}" no existe en este edificio. Creala primero en Unidades.`,
-        };
-      }
-
-      const row = await linkResident(target, trimmedEmail);
       const full = {
         ...row,
+        unitId,
         buildingId,
         building: buildingName,
         phone: phone?.trim() || "—",
@@ -175,8 +176,13 @@ export function ResidentsProvider({ children }) {
 
       logActivity({
         actor,
-        action: `Vinculó al residente "${full.name}" (unidad ${trimmedUnit})`,
+        action: `Vinculó al residente "${full.name}" (unidad ${full.unit})`,
         buildingId,
+        unitId,
+        unitCode: full.unit,
+        entityType: "unit",
+        entityId: unitId,
+        result: "ok",
       });
       return { success: true };
     } catch (err) {
