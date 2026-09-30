@@ -22,8 +22,8 @@ export const DashboardHomePage = () => {
   // Todo vinculado al edificio seleccionado en el sidebar.
   const { forBuilding: residentsForBuilding } = useResidents();
   const { forBuilding: accessForBuilding } = useAccessLogs();
-  const { forBuilding: deliveriesForBuilding } = useDeliveries();
-  const { forBuilding: incidentsForBuilding } = useIncidents();
+  const { pendingForBuilding, notifiedForBuilding } = useDeliveries();
+  const { openForBuilding } = useIncidents();
   const { forBuilding: maintenanceForBuilding } = useMaintenance();
   const { staff } = useStaffByRole(buildingId);
   const { forBuilding: movesForBuilding } = useMoves();
@@ -31,19 +31,11 @@ export const DashboardHomePage = () => {
   const residents = residentsForBuilding(buildingId);
   const logs = accessForBuilding(buildingId);
   const deniedCount = logs.filter((l) => l.status === "denied").length;
-  const buildingDeliveries = deliveriesForBuilding(buildingId);
-  // El backend devuelve los enums en mayúsculas (RECEIVED, OPEN, HIGH...).
-  // Aceptar ambas variantes evita que el filtro quede siempre vacío.
-  const pendingDeliveries = buildingDeliveries.filter(
-    (d) => d.status === "pending" || d.status === "RECEIVED",
-  );
-  const notified = buildingDeliveries.filter(
-    (d) => d.status === "notified" || d.status === "NOTIFIED",
-  );
-  const buildingIncidents = incidentsForBuilding(buildingId);
-  const openIncidents = buildingIncidents.filter(
-    (i) => i.status === "open" || i.status === "OPEN",
-  );
+  // El backend devuelve los enums en mayúsculas (RECEIVED, OPEN, HIGH...);
+  // la tolerancia a ambas variantes vive en los hooks.
+  const pendingDeliveries = pendingForBuilding(buildingId);
+  const notified = notifiedForBuilding(buildingId);
+  const openIncidents = openForBuilding(buildingId);
   const criticalIncidents = openIncidents.filter(
     (i) => i.severity === "high" || i.severity === "HIGH" || i.severity === "CRITICAL",
   );
