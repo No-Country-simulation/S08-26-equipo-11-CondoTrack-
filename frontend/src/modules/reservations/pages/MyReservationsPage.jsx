@@ -209,7 +209,9 @@ export const MyReservationsPage = () => {
                     {bookingSaving ? "Enviando..." : "Solicitar reserva"}
                   </button>
                   <p className="ct-font-mono ct-text-faint mt-2 mb-0" style={{ fontSize: "0.6875rem" }}>
-                    Se reserva como Unidad {current.unit}. Requiere rol de residente en el edificio.
+                    {current.hasUnit
+                      ? `Se reserva como Unidad ${current.unit}. Requiere rol de residente en el edificio.`
+                      : "Necesitás una unidad asignada para reservar."}
                   </p>
                 </div>
               )}

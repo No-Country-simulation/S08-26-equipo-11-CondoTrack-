@@ -34,7 +34,7 @@ export const ResidentHomePage = () => {
   const { forResident } = useAccessLogs();
   const { notifications, unreadCount, iconFor, markRead } = useNotifications();
   const current = useCurrentResident();
-  const firstName = current.name.split(" ")[0];
+  const firstName = current.name ? current.name.split(" ")[0] : "";
   const myAccess = forResident(current);
 
   return (
@@ -58,10 +58,12 @@ export const ResidentHomePage = () => {
             color: "var(--color-ink)",
           }}
         >
-          Hola, {firstName}
+          Hola{firstName ? `, ${firstName}` : ""}
         </h2>
         <p className="ct-text-muted mb-0 mt-1">
-          Unidad {current.unit} · {current.building}
+          {current.hasUnit
+            ? `Unidad ${current.unit} · ${current.buildingLabel}`
+            : "No tenés una unidad asignada. Pedí al administrador que vincule tu cuenta."}
         </p>
       </div>
 
@@ -195,7 +197,8 @@ export const ResidentHomePage = () => {
           <div className="ct-card">
             <div className="ct-card-header">
               <h3 className="ct-card-title">
-                Actividad reciente -Unidad {current.unit}
+                Actividad reciente
+                {current.hasUnit ? ` — Unidad ${current.unit}` : ""}
               </h3>
             </div>
             <div>
