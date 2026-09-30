@@ -1,7 +1,3 @@
-/* Estilos del dashboard de administración y del portal de residente.
-   Reemplazan las utilidades de Tailwind del mockup original: el proyecto
-   usa Bootstrap + estas clases semánticas, no Tailwind. */
-
 .ct-app-shell {
   display: flex;
   width: 100%;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { KpiCard } from "@/shared/components/KpiCard";
@@ -8,7 +9,12 @@ import { VISITOR_AUTHS } from "@/modules/access/data/visitors.data";
 import { RegisterAccessModal } from "@/modules/access/components/RegisterAccessModal";
 
 export const AccessPage = () => {
-  const { logs, ingressCount, egressCount, deniedCount } = useAccessLogs();
+  const { building } = useOutletContext();
+  const { forBuilding } = useAccessLogs();
+  const logs = forBuilding(building?.id);
+  const ingressCount = logs.filter((log) => log.direction === "Ingreso").length;
+  const egressCount = logs.filter((log) => log.direction === "Egreso").length;
+  const deniedCount = logs.filter((log) => log.status === "denied").length;
   const [showRegister, setShowRegister] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -21,8 +27,8 @@ export const AccessPage = () => {
       )}
 
       <div className="ct-grid-kpi-3 mb-4">
-        <KpiCard label="Ingresos hoy" value={ingressCount} sub="Torre Madero" />
-        <KpiCard label="Egresos hoy" value={egressCount} sub="Torre Madero" />
+        <KpiCard label="Ingresos hoy" value={ingressCount} sub={building?.name ?? ""} />
+        <KpiCard label="Egresos hoy" value={egressCount} sub={building?.name ?? ""} />
         <KpiCard label="Accesos denegados" value={deniedCount} sub={`Último: ${logs.find((l) => l.status === "denied")?.time ?? "—"}`} />
       </div>
 
@@ -100,6 +106,7 @@ export const AccessPage = () => {
       <RegisterAccessModal
         show={showRegister}
         onHide={() => setShowRegister(false)}
+        defaultBuildingId={building?.id}
         onRegistered={() => setSuccessMessage("Acceso registrado correctamente.")}
       />
     </div>

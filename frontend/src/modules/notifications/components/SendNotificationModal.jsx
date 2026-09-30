@@ -32,7 +32,7 @@ export const SendNotificationModal = ({ show, onHide, onSent }) => {
       type: "announcement",
       title: form.title.trim(),
       body: form.body.trim(),
-      buildingId: form.buildingId ? Number(form.buildingId) : null,
+      buildingId: form.buildingId ? form.buildingId : null,
       unit: form.unit.trim() || null,
     });
     setForm(EMPTY_FORM);

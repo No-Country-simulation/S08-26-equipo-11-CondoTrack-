@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "@/modules/dashboard/components/AdminSidebar";
 import { TopBar } from "@/shared/components/TopBar";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { useResidents } from "@/modules/residents/hooks/useResidents";
 
-const pageMetaFor = (pathname, building, buildingsCount) => {
+const pageMetaFor = (pathname, building, buildingsCount, residentsCount) => {
   if (pathname.startsWith("/dashboard/edificios/")) {
     return { title: "Edificios", subtitle: "Vista detallada del edificio" };
   }
@@ -20,7 +21,7 @@ const pageMetaFor = (pathname, building, buildingsCount) => {
     },
     "/dashboard/residentes": {
       title: "Residentes",
-      subtitle: `${building.name} · ${Math.round(building.units * 0.8)} residentes activos`,
+      subtitle: `${building.name} · ${residentsCount} residentes activos`,
     },
     "/dashboard/personal": {
       title: "Personal",
@@ -63,16 +64,27 @@ const pageMetaFor = (pathname, building, buildingsCount) => {
 };
 
 export const DashboardLayout = () => {
-  const [selectedBuildingId, setSelectedBuildingId] = useState(1);
+  // Los ids del backend son UUID string: se selecciona el primero al cargar.
+  const [selectedBuildingId, setSelectedBuildingId] = useState(null);
   const { buildings, getBuildingById } = useBuildings();
-  const building = getBuildingById(selectedBuildingId);
+  const effectiveId = selectedBuildingId ?? buildings[0]?.id ?? null;
+  const building = getBuildingById(effectiveId);
+  const { forBuilding: residentsForBuilding } = useResidents();
+  const residentsCount = residentsForBuilding(building.id).length;
   const { pathname } = useLocation();
-  const { title, subtitle } = pageMetaFor(pathname, building, buildings.length);
+  const { title, subtitle } = pageMetaFor(pathname, building, buildings.length, residentsCount);
+
+  useEffect(() => {
+    if (!selectedBuildingId && buildings.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- selección inicial al cargar la lista
+      setSelectedBuildingId(buildings[0].id);
+    }
+  }, [selectedBuildingId, buildings]);
 
   return (
     <div className="ct-app-shell">
       <AdminSidebar
-        selectedBuildingId={selectedBuildingId}
+        selectedBuildingId={effectiveId}
         onBuildingChange={setSelectedBuildingId}
       />
       <div className="ct-main">

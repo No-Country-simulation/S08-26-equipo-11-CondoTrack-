@@ -1,56 +1,495 @@
+import { useEffect, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
+import { Alert, Button, Form } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { canManageBuildingResources } from "@/modules/auth/constants/roles";
 import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
+import { listUnits } from "@/modules/units/services/unitsService";
+import { listUnitResidents } from "@/modules/residents/services/residentsService";
+import {
+  CARRIERS,
+  DELIVERY_STATUSES,
+} from "@/modules/deliveries/services/deliveriesService";
+import { apiErrorMessage } from "@/core/api/api";
+
+const EMPTY_FORM = {
+  unitId: "",
+  personId: "",
+  carrier: "Mercado Libre",
+  trackingNumber: "",
+};
+
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleString("es-AR", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
+const codeOfUnit = (units, unitId) =>
+  units.find((unit) => unit.id === unitId)?.code ?? "";
 
 export const DeliveriesPage = () => {
-  const { deliveries, pending, notified, delivered, notifyResident } = useDeliveries();
+  // En /dashboard viene del layout; en /recepcion, del primer edificio propio.
+  const outlet = useOutletContext();
+  const { user } = useAuth();
+  const building = outlet?.building ?? user?.buildings?.[0] ?? null;
+  const buildingId = building?.id ?? null;
+
+  const { forBuilding, registerDelivery, markPickedUp, isLoading, getError } =
+    useDeliveries();
+  const canRegister = canManageBuildingResources(user?.role) && !!buildingId;
+
+  const [statusFilter, setStatusFilter] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [units, setUnits] = useState([]);
+  const [unitResidents, setUnitResidents] = useState([]);
+  const [personMap, setPersonMap] = useState({});
+  const [formError, setFormError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const fetchedUnitsRef = useRef(new Set());
+
+  const deliveries = forBuilding(buildingId).filter(
+    (d) => !statusFilter || d.status === statusFilter,
+  );
+  const loading = isLoading(buildingId);
+  const loadError = getError(buildingId);
+
+  // Unidades del edificio (para códigos y para el formulario).
+  useEffect(() => {
+    if (!buildingId || !canRegister) return undefined;
+    let cancelled = false;
+    listUnits(buildingId)
+      .then(({ units: buildingUnits }) => {
+        if (!cancelled) setUnits(buildingUnits);
+      })
+      .catch(() => {
+        if (!cancelled) setUnits([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [buildingId, canRegister]);
+
+  // Residentes de la unidad elegida en el formulario.
+  useEffect(() => {
+    if (!form.unitId) {
+      return undefined;
+    }
+    let cancelled = false;
+    const unit = units.find((item) => item.id === form.unitId);
+    listUnitResidents(unit ?? { id: form.unitId })
+      .then((rows) => {
+        if (!cancelled) setUnitResidents(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setUnitResidents([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.unitId, units]);
+
+  // Resuelve nombres de destinatarios para las filas visibles.
+  useEffect(() => {
+    const missingUnitIds = [
+      ...new Set(
+        deliveries
+          .filter((d) => d.recipientPersonId && !personMap[d.recipientPersonId])
+          .map((d) => d.unitId)
+          .filter(Boolean),
+      ),
+    ].filter((unitId) => !fetchedUnitsRef.current.has(unitId));
+    if (!missingUnitIds.length) return undefined;
+
+    let cancelled = false;
+    missingUnitIds.forEach((unitId) => fetchedUnitsRef.current.add(unitId));
+    Promise.all(
+      missingUnitIds.map((unitId) =>
+        listUnitResidents({ id: unitId }).catch(() => []),
+      ),
+    ).then((lists) => {
+      if (cancelled) return;
+      const map = {};
+      lists.flat().forEach((row) => {
+        const key = row.personId ?? row.userId;
+        if (key && row.name) map[key] = row.name;
+      });
+      setPersonMap((prev) => ({ ...prev, ...map }));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- personMap es caché de solo lectura acá
+  }, [deliveries]);
+
+  const updateField = (field) => (event) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: event.target.value };
+      if (field === "unitId") next.personId = "";
+      return next;
+    });
+    if (field === "unitId") setUnitResidents([]);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setFormError("");
+
+    if (!form.unitId || !form.personId || !form.carrier) {
+      setFormError("Elegí unidad, destinatario y correo.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Revalida contra datos frescos: la persona pudo desvincularse (o la
+      // base pudo re-sembrarse) después de cargar el desplegable. Sin esto,
+      // el backend responde 400 "destinatario no vinculado".
+      const fresh = await listUnitResidents({ id: form.unitId });
+      const stillLinked = fresh.some(
+        (row) => row.personId && row.personId === form.personId,
+      );
+      if (!stillLinked) {
+        setFormError(
+          "Esa persona ya no figura vinculada a la unidad. Cerrá y volvé a abrir el formulario.",
+        );
+        return;
+      }
+
+      await registerDelivery(buildingId, form.unitId, {
+        recipientPersonId: form.personId,
+        carrier: form.carrier,
+        trackingNumber: form.trackingNumber,
+      });
+      setForm(EMPTY_FORM);
+      setUnitResidents([]);
+      setShowForm(false);
+      setSuccessMessage("Delivery registrado correctamente.");
+    } catch (err) {
+      setFormError(apiErrorMessage(err, "No se pudo registrar el delivery."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeliver = async (delivery) => {
+    setActionError("");
+    try {
+      await markPickedUp(delivery.id, delivery.buildingId);
+      setSuccessMessage("Delivery marcado como entregado.");
+    } catch (err) {
+      setActionError(apiErrorMessage(err, "No se pudo marcar como entregado."));
+    }
+  };
+
+  const pendingCount = forBuilding(buildingId).filter(
+    (d) => d.status === "RECEIVED" || d.status === "pending",
+  ).length;
 
   return (
     <div className="ct-main-scroll">
+      {successMessage && (
+        <Alert
+          variant="success"
+          dismissible
+          onClose={() => setSuccessMessage("")}
+          className="mb-4"
+        >
+          {successMessage}
+        </Alert>
+      )}
+      {actionError && (
+        <Alert
+          variant="danger"
+          dismissible
+          onClose={() => setActionError("")}
+          className="mb-4"
+        >
+          {actionError}
+        </Alert>
+      )}
+      {loadError && (
+        <Alert variant="danger" className="mb-4">
+          {loadError}
+        </Alert>
+      )}
+
       <div className="ct-grid-kpi-3 mb-4">
-        <KpiCard label="Pendientes de retiro" value={pending.length} sub={`Sin notificar: ${pending.length - notified.length >= 0 ? pending.length : 0}`} />
-        <KpiCard label="Notificados" value={notified.length} sub="Esperando retiro" />
-        <KpiCard label="Entregados hoy" value={delivered.length} sub="Esta semana" />
+        <KpiCard
+          label="En portería"
+          value={pendingCount}
+          sub={building?.name ?? ""}
+        />
+        <KpiCard
+          label="En esta vista"
+          value={deliveries.length}
+          sub={statusFilter || "Todos los estados"}
+        />
+        <KpiCard
+          label="Edificio"
+          value={building?.name ?? "—"}
+          sub="Alcance actual"
+        />
       </div>
+
+      <div className="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <select
+          aria-label="Filtrar por estado"
+          className="form-select form-select-sm"
+          style={{ width: "auto" }}
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="">Todos los estados</option>
+          {DELIVERY_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+        {canRegister && (
+          <button
+            type="button"
+            className="btn btn-sm text-white d-flex align-items-center gap-2 ms-auto"
+            style={{ background: "var(--color-accent)" }}
+            onClick={() => setShowForm((v) => !v)}
+          >
+            <Icon name="plus" size={14} />
+            Registrar delivery
+          </button>
+        )}
+      </div>
+
+      {showForm && canRegister && (
+        <div className="ct-card p-4 mb-4">
+          <p
+            className="ct-font-mono text-uppercase ct-text-muted mb-3"
+            style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}
+          >
+            Nuevo delivery -{building?.name}
+          </p>
+          <Form onSubmit={handleSubmit}>
+            <div className="row g-3 mb-3">
+              <div className="col-6">
+                <Form.Label
+                  className="ct-font-mono ct-text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  Unidad
+                </Form.Label>
+                <Form.Select
+                  value={form.unitId}
+                  onChange={updateField("unitId")}
+                  required
+                >
+                  <option value="">Seleccioná una unidad</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.code} · Piso {unit.floor}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label
+                  className="ct-font-mono ct-text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  Destinatario
+                </Form.Label>
+                <Form.Select
+                  value={form.personId}
+                  onChange={updateField("personId")}
+                  required
+                  disabled={!form.unitId}
+                >
+                  <option value="">
+                    {form.unitId
+                      ? "Seleccioná una persona"
+                      : "Primero elegí unidad"}
+                  </option>
+                  {unitResidents.map((row) => (
+                    <option
+                      key={row.personId ?? row.id}
+                      value={row.personId ?? ""}
+                    >
+                      {row.name || row.email}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label
+                  className="ct-font-mono ct-text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  Correo
+                </Form.Label>
+                <Form.Select
+                  value={form.carrier}
+                  onChange={updateField("carrier")}
+                  required
+                >
+                  {CARRIERS.map((carrier) => (
+                    <option key={carrier} value={carrier}>
+                      {carrier}
+                    </option>
+                  ))}
+                </Form.Select>
+              </div>
+              <div className="col-6">
+                <Form.Label
+                  className="ct-font-mono ct-text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  Seguimiento (opcional)
+                </Form.Label>
+                <Form.Control
+                  placeholder="Ej. AE-8831-2024"
+                  value={form.trackingNumber}
+                  onChange={updateField("trackingNumber")}
+                />
+              </div>
+            </div>
+
+            {formError && (
+              <Alert variant="danger" className="py-2 small mb-3">
+                {formError}
+              </Alert>
+            )}
+
+            <div className="d-flex justify-content-end gap-2">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setShowForm(false)}
+                disabled={saving}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={saving}
+                style={{
+                  background: "var(--color-accent)",
+                  borderColor: "var(--color-accent)",
+                }}
+              >
+                {saving ? "Guardando..." : "Registrar"}
+              </Button>
+            </div>
+          </Form>
+        </div>
+      )}
 
       <div className="ct-card overflow-hidden">
         <div className="ct-card-header">
-          <p className="ct-font-mono text-uppercase ct-text-muted mb-0" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+          <p
+            className="ct-font-mono text-uppercase ct-text-muted mb-0"
+            style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}
+          >
             Deliveries y correspondencia
           </p>
         </div>
         <div>
-          {deliveries.map((delivery) => (
-            <div key={delivery.id} className="ct-row ct-row-hover d-flex align-items-center gap-4">
-              <div className="ct-icon-tile" style={{ width: 36, height: 36, background: "var(--color-canvas)", border: "1px solid var(--color-border)" }}>
-                <Icon name="deliveries" size={16} className="ct-text-muted" />
-              </div>
-              <div className="flex-grow-1 min-w-0">
-                <div className="d-flex align-items-center gap-2">
-                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.resident}</p>
-                  <span className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem" }}>· Unidad {delivery.unit}</span>
-                </div>
-                <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>
-                  {delivery.carrier} · {delivery.description} · {delivery.tracking}
-                </p>
-              </div>
-              <div className="text-end flex-shrink-0">
-                <StatusBadge status={delivery.status} />
-                <p className="ct-font-mono ct-text-faint mb-0 mt-1" style={{ fontSize: "0.6875rem" }}>{delivery.received}</p>
-              </div>
-              {delivery.status === "pending" && (
-                <button
-                  type="button"
-                  className="btn btn-sm text-white flex-shrink-0"
-                  style={{ background: "var(--color-amber)" }}
-                  onClick={() => notifyResident(delivery.id)}
-                >
-                  Notificar
-                </button>
-              )}
+          {loading && (
+            <p className="ct-text-muted px-3 py-3 mb-0">
+              Cargando deliveries...
+            </p>
+          )}
+          {!loading && deliveries.length === 0 && (
+            <div className="text-center py-5">
+              <Icon
+                name="deliveries"
+                size={32}
+                className="ct-text-faint mb-3"
+              />
+              <p className="ct-text-muted mb-0">Sin deliveries registrados</p>
             </div>
-          ))}
+          )}
+          {deliveries.map((delivery) => {
+            const recipient =
+              personMap[delivery.recipientPersonId] ??
+              (delivery.resident || "Destinatario");
+            const canDeliver = [
+              "RECEIVED",
+              "NOTIFIED",
+              "pending",
+              "notified",
+            ].includes(delivery.status);
+            return (
+              <div
+                key={delivery.id}
+                className="ct-row ct-row-hover d-flex align-items-center gap-4"
+              >
+                <div
+                  className="ct-icon-tile-lg d-flex align-items-center justify-content-center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "0.75rem",
+                    background: "var(--color-canvas)",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
+                  <Icon name="deliveries" size={17} className="ct-text-muted" />
+                </div>
+                <div className="flex-grow-1 min-w-0">
+                  <p
+                    className="mb-0 fw-semibold"
+                    style={{ color: "var(--color-ink)" }}
+                  >
+                    {recipient}
+                  </p>
+                  <p className="ct-text-muted mb-0 mt-1">{delivery.carrier}</p>
+                  <p
+                    className="ct-font-mono ct-text-faint mb-0 mt-1"
+                    style={{ fontSize: "0.6875rem" }}
+                  >
+                    {codeOfUnit(units, delivery.unitId)
+                      ? `Unidad ${codeOfUnit(units, delivery.unitId)} · `
+                      : ""}
+                    {delivery.trackingNumber || "Sin seguimiento"}
+                  </p>
+                </div>
+                <div className="text-end flex-shrink-0">
+                  <StatusBadge status={delivery.status} />
+                  <p
+                    className="ct-font-mono ct-text-faint mb-0 mt-2"
+                    style={{ fontSize: "0.6875rem" }}
+                  >
+                    {formatDate(delivery.received)}
+                  </p>
+                </div>
+                {canDeliver && (
+                  <div className="text-center flex-shrink-0">
+                    <button
+                      type="button"
+                      className="btn btn-sm text-white"
+                      style={{ background: "var(--color-green)" }}
+                      onClick={() => handleDeliver(delivery)}
+                    >
+                      Entregar
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
