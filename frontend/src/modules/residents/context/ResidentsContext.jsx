@@ -8,6 +8,7 @@ import {
 } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { ROLES } from "@/modules/auth/constants/roles";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
@@ -26,7 +27,7 @@ const ResidentsContext = createContext(null);
 export function ResidentsProvider({ children }) {
   const [residentsByBuilding, setResidentsByBuilding] = useState({});
   const fetchedRef = useRef(new Set());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { buildings } = useBuildings();
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
@@ -81,16 +82,32 @@ export function ResidentsProvider({ children }) {
     [],
   );
 
+  // Este provider recorre todos los edificios del usuario para listar sus
+  // unidades y los residentes de cada una. Ese recorrido es trabajo de
+  // administración: el RESIDENT no entra en GET /buildings/:id/units ni en
+  // /units/:id/residents, así que llamarlo solo le generaba 403 en cada
+  // sesión sin aportarle nada (su portal usa GET /deliveries/mine y
+  // /incidents/mine, que ya son endpoints propios).
+  const canListBuildingResidents = !user?.roles?.some(
+    (role) => role.roleName === ROLES.RESIDENT,
+  );
+
   useEffect(() => {
     if (!isAuthenticated) {
       setResidentsByBuilding({});
       fetchedRef.current.clear();
       return;
     }
+    if (!canListBuildingResidents) return;
     buildings.forEach((building) =>
       fetchBuildingResidents(building.id, building.name),
     );
-  }, [isAuthenticated, buildings, fetchBuildingResidents]);
+  }, [
+    isAuthenticated,
+    canListBuildingResidents,
+    buildings,
+    fetchBuildingResidents,
+  ]);
 
   // Refresca un edificio a la fuerza (ej. tras crear+vincular un residente).
   const refreshBuilding = useCallback(

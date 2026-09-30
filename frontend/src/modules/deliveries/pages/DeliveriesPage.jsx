@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Alert, Button, Form } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
@@ -59,12 +59,10 @@ export const DeliveriesPage = () => {
   const [unitsError, setUnitsError] = useState("");
   const [unitResidents, setUnitResidents] = useState([]);
   const [residentsError, setResidentsError] = useState("");
-  const [personMap, setPersonMap] = useState({});
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const fetchedUnitsRef = useRef(new Set());
 
   const deliveries = useMemo(
     () =>
@@ -133,63 +131,6 @@ export const DeliveriesPage = () => {
     };
   }, [form.unitId, units]);
 
-  // Fallback: si el listado vino sin nombre de destinatario (por ejemplo
-  // porque la unidad ya no responde), se cruza contra los residentes.
-  useEffect(() => {
-    const missingUnitIds = [
-      ...new Set(
-        deliveries
-          .filter(
-            (d) =>
-              d.recipientPersonId &&
-              !d.resident &&
-              !personMap[d.recipientPersonId],
-          )
-          .map((d) => d.unitId)
-          .filter(Boolean),
-      ),
-    ].filter((unitId) => !fetchedUnitsRef.current.has(unitId));
-
-    if (!missingUnitIds.length) return undefined;
-
-    const inFlight = missingUnitIds;
-    missingUnitIds.forEach((unitId) => fetchedUnitsRef.current.add(unitId));
-
-    let cancelled = false;
-    Promise.all(
-      missingUnitIds.map((unitId) =>
-        listUnitResidents({ id: unitId }).catch(() => null),
-      ),
-    ).then((lists) => {
-      if (cancelled) {
-        // Libera las unidades para que otro intento las vuelva a consultar.
-        inFlight.forEach((unitId) => fetchedUnitsRef.current.delete(unitId));
-        return;
-      }
-
-      // Una consulta fallida no debe quedar cacheada: se libera para reintentar.
-      lists.forEach((list, index) => {
-        if (list === null) {
-          fetchedUnitsRef.current.delete(inFlight[index]);
-        }
-      });
-
-      const map = {};
-      lists
-        .filter(Boolean)
-        .flat()
-        .forEach((row) => {
-          const key = row.personId ?? row.userId;
-          if (key && row.name) map[key] = row.name;
-        });
-
-      setPersonMap((prev) => ({ ...prev, ...map }));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [deliveries, personMap]);
 
   const updateField = (field) => (event) => {
     setForm((prev) => {
@@ -505,10 +446,10 @@ export const DeliveriesPage = () => {
             </div>
           )}
           {deliveries.map((delivery) => {
+            // El backend proyecta recipient{firstName,lastName,fullName} en el
+            // listado, así que el nombre llega sin pedir /units/:id/residents.
             const recipient =
-              personMap[delivery.recipientPersonId] ||
-              delivery.resident ||
-              "Destinatario";
+              delivery.resident || "Sin destinatario registrado";
             const canDeliver = [
               "RECEIVED",
               "NOTIFIED",
