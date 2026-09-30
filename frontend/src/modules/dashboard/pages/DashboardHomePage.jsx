@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useAccessLogs } from "@/modules/access/hooks/useAccessLogs";
@@ -10,6 +10,8 @@ import { useStaff } from "@/modules/staff/context/StaffContext";
 import { useMoves } from "@/modules/moves/context/MovesContext";
 
 export const DashboardHomePage = () => {
+  const { building } = useOutletContext();
+  const buildingId = building?.id;
   const today = new Date().toLocaleDateString("es-AR", {
     weekday: "long",
     day: "numeric",
@@ -17,14 +19,27 @@ export const DashboardHomePage = () => {
     year: "numeric",
   });
 
-  const { residents } = useResidents();
-  const { logs, deniedCount } = useAccessLogs();
-  const { pending: pendingDeliveries, notified } = useDeliveries();
-  const { open: openIncidents } = useIncidents();
-  const { items: maintenanceItems } = useMaintenance();
+  // Todo vinculado al edificio seleccionado en el sidebar.
+  const { forBuilding: residentsForBuilding } = useResidents();
+  const { forBuilding: accessForBuilding } = useAccessLogs();
+  const { forBuilding: deliveriesForBuilding } = useDeliveries();
+  const { forBuilding: incidentsForBuilding } = useIncidents();
+  const { forBuilding: maintenanceForBuilding } = useMaintenance();
+  const { forBuilding: staffForBuilding } = useStaff();
+  const { forBuilding: movesForBuilding } = useMoves();
+
+  const residents = residentsForBuilding(buildingId);
+  const logs = accessForBuilding(buildingId);
+  const deniedCount = logs.filter((l) => l.status === "denied").length;
+  const buildingDeliveries = deliveriesForBuilding(buildingId);
+  const pendingDeliveries = buildingDeliveries.filter((d) => d.status === "pending");
+  const notified = buildingDeliveries.filter((d) => d.status === "notified");
+  const buildingIncidents = incidentsForBuilding(buildingId);
+  const openIncidents = buildingIncidents.filter((i) => i.status === "open");
+  const maintenanceItems = maintenanceForBuilding(buildingId);
   const inProgressMaintenance = maintenanceItems.filter((m) => m.status !== "resolved");
-  const { staff } = useStaff();
-  const { moves } = useMoves();
+  const staff = staffForBuilding(buildingId);
+  const moves = movesForBuilding(buildingId);
   const pendingMoves = moves.filter((m) => m.status === "pending");
 
   return (
@@ -72,8 +87,8 @@ export const DashboardHomePage = () => {
             <div>
               {pendingDeliveries.map((delivery) => (
                 <div key={delivery.id} className="ct-row ct-row-hover">
-                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.resident}</p>
-                  <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>{delivery.carrier} · {delivery.received}</p>
+                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.carrier}</p>
+                  <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>{delivery.trackingNumber || delivery.resident || "Sin seguimiento"}</p>
                 </div>
               ))}
             </div>

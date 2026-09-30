@@ -1,0 +1,304 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Alert, Badge } from "react-bootstrap";
+import { Icon } from "@/shared/components/Icon";
+import { StatusBadge } from "@/shared/components/StatusBadge";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { ROLES } from "@/modules/auth/constants/roles";
+import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { useUsers } from "@/modules/users/context/UsersContext";
+import { AssignRoleModal } from "@/modules/users/components/AssignRoleModal";
+import { CreateUserModal } from "@/modules/users/components/CreateUserModal";
+
+// El backend solo acepta estos roles en el filtro (ADMIN/SUPER_ADMIN dan 400).
+const ROLE_OPTIONS = ["", ROLES.RESIDENT, ROLES.RECEPTION, ROLES.MAINTENANCE];
+
+const fullNameOf = (user) =>
+  `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || user.email;
+
+const initialsOf = (name) =>
+  name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
+
+export const UsuariosPage = () => {
+  const {
+    users,
+    total,
+    page,
+    totalPages,
+    loading,
+    error,
+    filters,
+    updateFilters,
+    goToPage,
+    refreshUsers,
+  } = useUsers();
+  const { buildings, getBuildingById } = useBuildings();
+  const { user: currentUser } = useAuth();
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // El backend exige buildingId a los ADMIN (400 si falta).
+  const needsBuilding =
+    currentUser?.role === ROLES.ADMIN && !filters.buildingId;
+
+  const buildingNameOf = (buildingId) => {
+    if (!buildingId) return "—";
+    const found = buildings.find((building) => building.id === buildingId);
+    return found?.name ?? getBuildingById(buildingId).name;
+  };
+
+  return (
+    <div className="ct-main-scroll">
+      {successMessage && (
+        <Alert
+          variant="success"
+          dismissible
+          onClose={() => setSuccessMessage("")}
+          className="mb-4"
+        >
+          {successMessage}
+        </Alert>
+      )}
+
+      {error && (
+        <Alert variant="danger" className="mb-4">
+          {error}{" "}
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 align-baseline"
+            onClick={() => refreshUsers()}
+          >
+            Reintentar
+          </button>
+        </Alert>
+      )}
+
+      <div className="d-flex align-items-center gap-3 mb-2 flex-wrap">
+        <div className="ct-search-box">
+          <Icon name="search" size={15} className="ct-text-faint" />
+          <input
+            placeholder="Buscar por nombre o email…"
+            value={filters.search}
+            onChange={(event) =>
+              updateFilters({ search: event.target.value })
+            }
+          />
+        </div>
+        <select
+          aria-label="Filtrar por rol"
+          className="form-select form-select-sm"
+          style={{ width: "auto" }}
+          value={filters.role}
+          onChange={(event) => updateFilters({ role: event.target.value })}
+        >
+          <option value="">Todos los roles</option>
+          {ROLE_OPTIONS.filter(Boolean).map((role) => (
+            <option key={role} value={role}>
+              {role}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filtrar por edificio"
+          className="form-select form-select-sm"
+          style={{ width: "auto" }}
+          value={filters.buildingId}
+          onChange={(event) =>
+            updateFilters({ buildingId: event.target.value })
+          }
+        >
+          <option value="">Todos los edificios</option>
+          {buildings.map((building) => (
+            <option key={building.id} value={building.id}>
+              {building.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="btn btn-sm text-white d-flex align-items-center gap-2 ms-auto"
+          style={{ background: "var(--color-accent)" }}
+        >
+          <Icon name="plus" size={14} />
+          Nuevo usuario
+        </button>
+      </div>
+
+      <p className="ct-font-mono ct-text-muted mb-3" style={{ fontSize: "0.75rem" }}>
+        {loading
+          ? "Cargando..."
+          : `${total} usuario(s) · Página ${page} de ${totalPages}`}
+      </p>
+
+      {needsBuilding && !loading && (
+        <Alert variant="info" className="py-2 mb-4">
+          Elegí un edificio para ver sus usuarios.
+        </Alert>
+      )}
+
+      <div className="ct-card overflow-hidden">
+        <table className="ct-table mb-0">
+          <thead>
+            <tr>
+              {["Usuario", "Roles", "Edificios", "Estado", ""].map((header) => (
+                <th key={header}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>
+                  <div className="d-flex align-items-center gap-3">
+                    <div
+                      className="ct-avatar"
+                      style={{ width: 28, height: 28, fontSize: "0.75rem" }}
+                    >
+                      {initialsOf(fullNameOf(user))}
+                    </div>
+                    <div>
+                      <Link
+                        to={`/dashboard/usuarios/${user.id}`}
+                        className="mb-0 fw-medium text-decoration-none"
+                        style={{ color: "var(--color-ink)" }}
+                      >
+                        {fullNameOf(user)}
+                      </Link>
+                      <p
+                        className="ct-font-mono ct-text-muted mb-0"
+                        style={{ fontSize: "0.75rem" }}
+                      >
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="d-flex flex-wrap gap-1">
+                    {user.roles.length === 0 && (
+                      <span className="ct-text-faint" style={{ fontSize: "0.75rem" }}>
+                        Sin rol
+                      </span>
+                    )}
+                    {user.roles.map((role, index) => (
+                      <Badge
+                        key={`${role.roleName}-${role.buildingId ?? "global"}-${index}`}
+                        bg="light"
+                        text="dark"
+                        className="border"
+                      >
+                        {role.roleName}
+                      </Badge>
+                    ))}
+                  </div>
+                </td>
+                <td className="ct-text-muted" style={{ fontSize: "0.8125rem" }}>
+                  {user.roles.length === 0
+                    ? "—"
+                    : [
+                        ...new Set(
+                          user.roles.map((role) =>
+                            buildingNameOf(role.buildingId),
+                          ),
+                        ),
+                      ].join(", ")}
+                </td>
+                <td>
+                  <StatusBadge
+                    status={
+                      user.status === "ACTIVE"
+                        ? "active"
+                        : user.status === "BLOCKED"
+                          ? "blocked"
+                          : "inactive"
+                    }
+                  />
+                </td>
+                <td className="text-end">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    Asignar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!loading && users.length === 0 && (
+          <div className="text-center py-5 ct-text-muted">
+            Sin usuarios para los filtros elegidos.
+          </div>
+        )}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="d-flex align-items-center justify-content-center gap-3 mt-3">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={loading || page <= 1}
+            onClick={() => goToPage(page - 1)}
+          >
+            Anterior
+          </button>
+          <span
+            className="ct-font-mono ct-text-muted"
+            style={{ fontSize: "0.75rem" }}
+          >
+            Página {page} de {totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={loading || page >= totalPages}
+            onClick={() => goToPage(page + 1)}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      <AssignRoleModal
+        key={selectedUser?.id ?? "none"}
+        user={selectedUser}
+        show={!!selectedUser}
+        onHide={() => setSelectedUser(null)}
+        onAssigned={(updated) => {
+          // Si el usuario ya no coincide con los filtros (ej. le quitaste
+          // el rol filtrado), no va a aparecer en la tabla: se avisa.
+          const roles = updated.roles ?? [];
+          const matches =
+            (!filters.role ||
+              roles.some((entry) => entry.roleName === filters.role)) &&
+            (!filters.buildingId ||
+              roles.some(
+                (entry) => entry.buildingId === filters.buildingId,
+              ));
+          setSuccessMessage(
+            matches
+              ? `Roles actualizados para ${updated.email}.`
+              : `Rol actualizado. ${updated.email} ya no coincide con los filtros actuales.`,
+          );
+        }}
+      />
+      <CreateUserModal
+        show={showCreate}
+        onHide={() => setShowCreate(false)}
+        onCreated={(message) => {
+          setSuccessMessage(message);
+          refreshUsers();
+        }}
+      />
+    </div>
+  );
+};

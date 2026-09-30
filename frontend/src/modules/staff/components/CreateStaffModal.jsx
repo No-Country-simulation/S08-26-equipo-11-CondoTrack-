@@ -32,7 +32,7 @@ export const CreateStaffModal = ({ show, onHide, onCreated }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const result = addStaff({ ...form, buildingId: Number(form.buildingId) });
+    const result = addStaff({ ...form, buildingId: form.buildingId || "" });
     if (!result.success) {
       setError(result.error);
       return;

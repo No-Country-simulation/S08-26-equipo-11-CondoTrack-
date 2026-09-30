@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
@@ -11,10 +12,14 @@ import { CreateStaffModal } from "@/modules/staff/components/CreateStaffModal";
 const ROLE_LABELS = {
   [STAFF_ROLES.RECEPTIONIST]: "Recepcionista / Portero",
   [STAFF_ROLES.MAINTENANCE]: "Mantenimiento",
+  [STAFF_ROLES.ADMINISTADOR]: "Administrador",
 };
 
 export const StaffPage = () => {
-  const { staff } = useStaff();
+  const navigate = useNavigate();
+  const { building } = useOutletContext();
+  const { forBuilding } = useStaff();
+  const staff = forBuilding(building?.id);
   const { getBuildingById } = useBuildings();
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
@@ -25,13 +30,26 @@ export const StaffPage = () => {
   return (
     <div className="ct-main-scroll">
       {successMessage && (
-        <Alert variant="success" dismissible onClose={() => setSuccessMessage("")} className="mb-4">
+        <Alert
+          variant="success"
+          dismissible
+          onClose={() => setSuccessMessage("")}
+          className="mb-4"
+        >
           {successMessage}
         </Alert>
       )}
 
       {canCreate && (
-        <div className="d-flex justify-content-end mb-4">
+        <div className="d-flex justify-content-end gap-2 mb-4">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+            onClick={() => navigate("/dashboard/usuarios")}
+          >
+            <Icon name="plus" size={14} />
+            Crear usuario
+          </button>
           <button
             type="button"
             className="btn btn-sm text-white d-flex align-items-center gap-2"
@@ -48,15 +66,19 @@ export const StaffPage = () => {
         <table className="ct-table mb-0">
           <thead>
             <tr>
-              {["Nombre", "Rol", "Tipo", "Edificio", "Contacto"].map((header) => (
-                <th key={header}>{header}</th>
-              ))}
+              {["Nombre", "Rol", "Tipo", "Edificio", "Contacto"].map(
+                (header) => (
+                  <th key={header}>{header}</th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>
             {staff.map((member) => (
               <tr key={member.id}>
-                <td className="fw-medium" style={{ color: "var(--color-ink)" }}>{member.name}</td>
+                <td className="fw-medium" style={{ color: "var(--color-ink)" }}>
+                  {member.name}
+                </td>
                 <td className="ct-text-muted">{ROLE_LABELS[member.role]}</td>
                 <td className="ct-text-muted">
                   {member.role === STAFF_ROLES.MAINTENANCE
@@ -65,8 +87,13 @@ export const StaffPage = () => {
                       : "Personal interno"
                     : "—"}
                 </td>
-                <td className="ct-text-muted">{getBuildingById(member.buildingId).name}</td>
-                <td className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem" }}>
+                <td className="ct-text-muted">
+                  {getBuildingById(member.buildingId).name}
+                </td>
+                <td
+                  className="ct-font-mono ct-text-muted"
+                  style={{ fontSize: "0.75rem" }}
+                >
                   {member.phone} · {member.email}
                 </td>
               </tr>
@@ -74,14 +101,18 @@ export const StaffPage = () => {
           </tbody>
         </table>
         {staff.length === 0 && (
-          <div className="text-center py-5 ct-text-muted">Todavía no hay personal registrado.</div>
+          <div className="text-center py-5 ct-text-muted">
+            Todavía no hay personal registrado.
+          </div>
         )}
       </div>
 
       <CreateStaffModal
         show={showCreate}
         onHide={() => setShowCreate(false)}
-        onCreated={() => setSuccessMessage("Personal registrado correctamente.")}
+        onCreated={() =>
+          setSuccessMessage("Personal registrado correctamente.")
+        }
       />
     </div>
   );

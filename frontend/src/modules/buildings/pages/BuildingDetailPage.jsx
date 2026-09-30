@@ -4,11 +4,14 @@ import { Tabs, Tab } from "react-bootstrap";
 import { Icon } from "@/shared/components/Icon";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
-import { canManageBuildingResources } from "@/modules/auth/constants/roles";
+import {
+  canCreateBuildings,
+  canManageBuildingResources,
+} from "@/modules/auth/constants/roles";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { listCommonAreas } from "@/modules/amenities/services/commonAreasService";
 import { useResidents } from "@/modules/residents/hooks/useResidents";
 import { useUnits } from "@/modules/units/context/UnitsContext";
-import { useAmenities } from "@/modules/amenities/context/AmenitiesContext";
 import { useStaff } from "@/modules/staff/context/StaffContext";
 import { useAccessLogs } from "@/modules/access/hooks/useAccessLogs";
 import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
@@ -17,9 +20,12 @@ import { useMoves } from "@/modules/moves/context/MovesContext";
 import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
-import { CreateResidentModal } from "@/modules/residents/components/CreateResidentModal";
+import { CreateUserModal } from "@/modules/users/components/CreateUserModal";
+import { LinkAccountModal } from "@/modules/residents/components/LinkAccountModal";
+import { useResidentsStore } from "@/modules/residents/context/ResidentsContext";
 import { UnitsModal } from "@/modules/units/components/UnitsModal";
 import { AmenitiesModal } from "@/modules/amenities/components/AmenitiesModal";
+import { EditBuildingModal } from "@/modules/buildings/components/EditBuildingModal";
 
 const STAFF_ROLE_LABELS = { receptionist: "Recepcionista / Portero", maintenance: "Mantenimiento" };
 
@@ -31,10 +37,11 @@ export const BuildingDetailPage = () => {
     useBuildings();
   const { user } = useAuth();
   const canManage = canManageBuildingResources(user?.role);
+  const canEdit = canCreateBuildings(user?.role);
 
   const { forBuilding: residentsForBuilding } = useResidents();
+  const { refreshBuilding: refreshResidents } = useResidentsStore();
   const { forBuilding: unitsForBuilding, fetchUnits, isUnitsLoading, unitsError, getUnitsTotal } = useUnits();
-  const { forBuilding: amenitiesForBuilding } = useAmenities();
   const { forBuilding: staffForBuilding } = useStaff();
   const { forBuilding: accessForBuilding } = useAccessLogs();
   const { forBuilding: deliveriesForBuilding } = useDeliveries();
@@ -45,12 +52,51 @@ export const BuildingDetailPage = () => {
   const { forBuilding: activityForBuilding } = useActivityLog();
 
   const [showResidentModal, setShowResidentModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
   const [showUnitsModal, setShowUnitsModal] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [areas, setAreas] = useState([]);
+  const [areasLoading, setAreasLoading] = useState(false);
+  const [areasError, setAreasError] = useState("");
+  const [amenitiesKey, setAmenitiesKey] = useState(0);
 
   useEffect(() => {
     fetchUnits(id);
   }, [id, fetchUnits]);
+
+  // Amenidades reales del edificio (el mock no tiene nada para UUID).
+  useEffect(() => {
+    if (!id) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga amenidades al abrir/cambiar edificio
+    setAreasLoading(true);
+    setAreasError("");
+
+    listCommonAreas(id)
+      .then((items) => {
+        if (!cancelled) setAreas(items);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setAreas([]);
+          setAreasError(
+            err?.response?.data?.message ??
+              "No se pudieron cargar las amenidades.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAreasLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, amenitiesKey]);
 
   if (buildingsLoading) {
     return (
@@ -70,7 +116,6 @@ export const BuildingDetailPage = () => {
   const unitsLoading = isUnitsLoading(id);
   const unitsLoadError = unitsError(id);
   const unitsTotal = getUnitsTotal(id);
-  const amenities = amenitiesForBuilding(id);
   const staff = staffForBuilding(id);
   const accessLogs = accessForBuilding(id);
   const deliveries = deliveriesForBuilding(id);
@@ -88,6 +133,15 @@ export const BuildingDetailPage = () => {
           <h2 className="ct-font-display mb-0 mt-1" style={{ fontSize: "1.5rem", fontWeight: 600, color: "var(--color-ink)" }}>{building.name}</h2>
           <p className="ct-text-muted mb-0">{building.address}, {building.city}</p>
         </div>
+        {canEdit && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary flex-shrink-0"
+            onClick={() => setShowEditModal(true)}
+          >
+            Editar
+          </button>
+        )}
       </div>
 
       <div className="ct-grid-kpi mb-4">
@@ -112,7 +166,8 @@ export const BuildingDetailPage = () => {
       <Tabs defaultActiveKey="residentes" className="mb-3">
         <Tab eventKey="residentes" title="Residentes">
           {canManage && (
-            <div className="d-flex justify-content-end my-3">
+            <div className="d-flex justify-content-end gap-2 my-3">
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowLinkModal(true)}>Vincular cuenta</button>
               <button type="button" className="btn btn-sm text-white d-flex align-items-center gap-2" style={{ background: "var(--color-accent)" }} onClick={() => setShowResidentModal(true)}>
                 <Icon name="plus" size={13} /> Nuevo residente
               </button>
@@ -154,7 +209,13 @@ export const BuildingDetailPage = () => {
           {!unitsLoading && !unitsLoadError && (
             <div className="ct-card p-3 d-flex flex-wrap gap-2">
               {units.map((unit) => (
-                <span key={unit.id} className="badge bg-light text-dark border px-2 py-2">{unit.label}</span>
+                <Link
+                  key={unit.id}
+                  to={`/dashboard/edificios/${id}/unidades/${unit.id}`}
+                  className="badge bg-light text-dark border px-2 py-2 text-decoration-none"
+                >
+                  {unit.label}
+                </Link>
               ))}
               {units.length === 0 && <span className="ct-text-muted">Sin unidades cargadas.</span>}
             </div>
@@ -167,15 +228,22 @@ export const BuildingDetailPage = () => {
               <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setShowAmenitiesModal(true)}>Gestionar amenidades</button>
             </div>
           )}
-          <div className="ct-card overflow-hidden">
-            {amenities.map((amenity) => (
-              <div key={amenity.id} className="ct-row ct-row-hover">
-                <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{amenity.name}</p>
-                <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>Capacidad: {amenity.capacity} · {amenity.openTime}–{amenity.closeTime}</p>
-              </div>
-            ))}
-            {amenities.length === 0 && <div className="text-center py-4 ct-text-muted">Sin amenidades cargadas.</div>}
-          </div>
+          {areasLoading && <p className="ct-text-muted">Cargando amenidades...</p>}
+          {areasError && <div className="alert alert-danger py-2 small">{areasError}</div>}
+          {!areasLoading && !areasError && (
+            <div className="ct-card overflow-hidden">
+              {areas.map((amenity) => (
+                <div key={amenity.id} className="ct-row ct-row-hover">
+                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{amenity.name}</p>
+                  <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>
+                    Capacidad: {amenity.capacity ?? "—"}
+                    {amenity.description ? ` · ${amenity.description}` : ""}
+                  </p>
+                </div>
+              ))}
+              {areas.length === 0 && <div className="text-center py-4 ct-text-muted">Sin amenidades cargadas.</div>}
+            </div>
+          )}
         </Tab>
 
         <Tab eventKey="personal" title="Personal">
@@ -320,13 +388,33 @@ export const BuildingDetailPage = () => {
         </Tab>
       </Tabs>
 
-      <CreateResidentModal
+      <CreateUserModal
         show={showResidentModal}
         onHide={() => setShowResidentModal(false)}
         defaultBuildingId={id}
+        onCreated={(message, info) => refreshResidents(info?.buildingId ?? id)}
+      />
+      <LinkAccountModal
+        show={showLinkModal}
+        onHide={() => setShowLinkModal(false)}
+        defaultBuildingId={id}
+        onLinked={(info) => refreshResidents(info?.buildingId ?? id)}
       />
       <UnitsModal building={building} show={showUnitsModal} onHide={() => setShowUnitsModal(false)} />
-      <AmenitiesModal building={building} show={showAmenitiesModal} onHide={() => setShowAmenitiesModal(false)} />
+      <AmenitiesModal
+        building={building}
+        show={showAmenitiesModal}
+        onHide={() => {
+          setShowAmenitiesModal(false);
+          setAmenitiesKey((key) => key + 1);
+        }}
+      />
+      <EditBuildingModal
+        key={building.id}
+        building={building}
+        show={showEditModal}
+        onHide={() => setShowEditModal(false)}
+      />
     </div>
   );
 };

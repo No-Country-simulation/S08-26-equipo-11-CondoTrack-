@@ -1,15 +1,71 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "@/core/router/ProtectedRoute";
+import { ROLES } from "@/modules/auth/constants/roles";
 import { lazy, Suspense } from "react";
+import Loading from "@/shared/components/Loading";
+import NotFound from "@/shared/components/NotFound";
 
 const LoginPage = lazy(() =>
   import("@/modules/auth/page/LoginPage").then((module) => ({
     default: module.LoginPage,
   })),
 );
-const RegisterPage = lazy(() =>
-  import("@/modules/auth/page/RegisterPage").then((module) => ({
-    default: module.RegisterPage,
+
+const UsuariosPage = lazy(() =>
+  import("@/modules/users/pages/UsuariosPage").then((module) => ({
+    default: module.UsuariosPage,
+  })),
+);
+
+const UserDetailPage = lazy(() =>
+  import("@/modules/users/pages/UserDetailPage").then((module) => ({
+    default: module.UserDetailPage,
+  })),
+);
+
+const ResidentLayout = lazy(() =>
+  import("@/modules/resident/layout/ResidentLayout").then((m) => ({
+    default: m.ResidentLayout,
+  })),
+);
+const ResidentHomePage = lazy(() =>
+  import("@/modules/resident/pages/ResidentHomePage").then((m) => ({
+    default: m.ResidentHomePage,
+  })),
+);
+const VisitsPage = lazy(() =>
+  import("@/modules/access/pages/VisitsPage").then((m) => ({
+    default: m.VisitsPage,
+  })),
+);
+const MyDeliveriesPage = lazy(() =>
+  import("@/modules/deliveries/pages/MyDeliveriesPage").then((m) => ({
+    default: m.MyDeliveriesPage,
+  })),
+);
+const MyReservationsPage = lazy(() =>
+  import("@/modules/reservations/pages/MyReservationsPage").then((m) => ({
+    default: m.MyReservationsPage,
+  })),
+);
+const MyMovesPage = lazy(() =>
+  import("@/modules/moves/pages/MyMovesPage").then((m) => ({
+    default: m.MyMovesPage,
+  })),
+);
+const RequestsPage = lazy(() =>
+  import("@/modules/resident/pages/RequestsPage").then((m) => ({
+    default: m.RequestsPage,
+  })),
+);
+const UnitPage = lazy(() =>
+  import("@/modules/resident/pages/UnitPage").then((m) => ({
+    default: m.UnitPage,
+  })),
+);
+const ReceptionLayout = lazy(() =>
+  import("@/modules/reception/layout/ReceptionLayout").then((m) => ({
+    default: m.ReceptionLayout,
   })),
 );
 
@@ -87,6 +143,12 @@ const BuildingDetailPage = lazy(() =>
   })),
 );
 
+const UnitDetailPage = lazy(() =>
+  import("@/modules/units/pages/UnitDetailPage").then((m) => ({
+    default: m.UnitDetailPage,
+  })),
+);
+
 const DashboardHomePage = lazy(() =>
   import("@/modules/dashboard/pages/DashboardHomePage").then((m) => ({
     default: m.DashboardHomePage,
@@ -113,30 +175,19 @@ const AuthCallback = lazy(() =>
 
 function Unauthorized() {
   return (
-    <main style={{ padding: "2rem", textAlign: "center" }}>
-      <h1>No autorizado</h1>
-      <p>No tenés permiso para ver esta página.</p>
-      <a href="/inicio">Volver al inicio</a>
-    </main>
-  );
-}
-
-function NotFound() {
-  return (
-    <main>
-      <h1 className="">Página no encontrada</h1>
-      <Navigate to="/login" replace />
-    </main>
+    <NotFound
+      message="No tienes permisos para acceder a esta página."
+      homePath="/inicio"
+    />
   );
 }
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<p>Cargando...</p>}>
+      <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           <Route
@@ -158,7 +209,7 @@ export default function AppRouter() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -166,6 +217,22 @@ export default function AppRouter() {
             <Route path="residentes" element={<ResidentsPage />} />
             <Route path="actividad" element={<ActivityPage />} />
             <Route path="personal" element={<StaffPage />} />
+            <Route
+              path="usuarios"
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
+                  <UsuariosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="usuarios/:userId"
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN]}>
+                  <UserDetailPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="accesos" element={<AccessPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
             <Route path="reservas" element={<ReservationsPage />} />
@@ -178,7 +245,46 @@ export default function AppRouter() {
               path="edificios/:buildingId"
               element={<BuildingDetailPage />}
             />
+            <Route
+              path="edificios/:buildingId/unidades/:unitId"
+              element={<UnitDetailPage />}
+            />
             <Route index element={<DashboardHomePage />} />
+          </Route>
+
+          <Route
+            path="/portal"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.RESIDENT]}>
+                <ResidentLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<ResidentHomePage />} />
+            <Route path="visitas" element={<VisitsPage />} />
+            <Route path="deliveries" element={<MyDeliveriesPage />} />
+            <Route path="reservas" element={<MyReservationsPage />} />
+            <Route path="mudanzas" element={<MyMovesPage />} />
+            <Route path="solicitudes" element={<RequestsPage />} />
+            <Route path="unidad" element={<UnitPage />} />
+          </Route>
+
+          <Route
+            path="/recepcion"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  ROLES.SUPER_ADMIN,
+                  ROLES.RECEPTION,
+                  ROLES.MAINTENANCE,
+                ]}
+              >
+                <ReceptionLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AccessPage />} />
+            <Route path="deliveries" element={<DeliveriesPage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />

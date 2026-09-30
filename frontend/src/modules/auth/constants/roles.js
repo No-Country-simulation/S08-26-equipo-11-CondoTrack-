@@ -12,3 +12,16 @@ export const ROLES = {
 export const canCreateBuildings = (role) => role === ROLES.SUPER_ADMIN;
 export const canManageBuildingResources = (role) =>
   role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN;
+
+// Perfiles del selector /inicio: cada rol ve solo el suyo
+// (SUPER_ADMIN los ve todos). Sin rol no se ve ninguno.
+export const canAccessProfile = (profileKey, role) => {
+  if (role === ROLES.SUPER_ADMIN) return true;
+
+  if (profileKey === "administracion") return role === ROLES.ADMIN;
+  if (profileKey === "residente") return role === ROLES.RESIDENT;
+  if (profileKey === "recepcion")
+    return role === ROLES.RECEPTION || role === ROLES.MAINTENANCE;
+
+  return false;
+};
