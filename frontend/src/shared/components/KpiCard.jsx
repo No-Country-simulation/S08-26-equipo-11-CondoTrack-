@@ -1,7 +1,12 @@
 import PropTypes from "prop-types";
 import { Icon } from "@/shared/components/Icon";
 
-export const KpiCard = ({ label, value, sub, accent, icon }) => (
+export const KpiCard = ({ label, value, sub, accent, icon }) => {
+  // Los valores de texto son estados sin datos ("sin unidades"), no métricas:
+  // se muestran en un cuerpo legible para que no se lean como un número roto.
+  const isCount = typeof value === "number";
+
+  return (
   <div className="ct-card p-4 d-flex flex-column gap-3">
     <div className="d-flex align-items-start justify-content-between">
       <p
@@ -20,7 +25,15 @@ export const KpiCard = ({ label, value, sub, accent, icon }) => (
       )}
     </div>
     <div>
-      <p className="ct-font-display mb-0" style={{ fontSize: "1.875rem", fontWeight: 600, color: "var(--color-ink)", lineHeight: 1 }}>
+      <p
+        className={`ct-font-display mb-0 ${isCount ? "" : "ct-text-muted"}`}
+        style={{
+          fontSize: isCount ? "1.875rem" : "1.125rem",
+          fontWeight: 600,
+          color: isCount ? "var(--color-ink)" : "var(--color-ink-muted)",
+          lineHeight: 1.2,
+        }}
+      >
         {value}
       </p>
       {sub && (
@@ -30,7 +43,8 @@ export const KpiCard = ({ label, value, sub, accent, icon }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 KpiCard.propTypes = {
   label: PropTypes.string.isRequired,
