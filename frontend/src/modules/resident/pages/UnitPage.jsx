@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  AMENITIES,
   BUILDING_CONTACTS,
   BUILDING_RULES,
 } from "@/modules/resident/data/unit.data";
@@ -32,7 +31,9 @@ export const UnitPage = () => {
     };
   }, [current.buildingId]);
 
-  const amenities = areas?.length ? areas.map((area) => area.name) : AMENITIES;
+  // Solo espacios reales del backend: si no hay, se muestra el estado vacío
+  // en vez de la lista de ejemplo del mock.
+  const amenities = (areas ?? []).map((area) => area.name);
 
   const UNIT_STATS = [
     { label: "Edificios", val: current.buildingLabel },
@@ -92,7 +93,12 @@ export const UnitPage = () => {
               </p>
             </div>
             <div className="p-3 d-flex flex-wrap gap-2">
-              {amenities.map((amenity) => (
+              {amenities.length === 0 ? (
+                <p className="ct-text-muted mb-0">
+                  Este edificio no tiene espacios comunes cargados.
+                </p>
+              ) : (
+                amenities.map((amenity) => (
                 <span
                   key={amenity}
                   className="badge rounded-pill fw-medium ct-text-muted"
@@ -104,7 +110,8 @@ export const UnitPage = () => {
                 >
                   {amenity}
                 </span>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
