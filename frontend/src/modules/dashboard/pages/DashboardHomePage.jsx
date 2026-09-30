@@ -97,8 +97,13 @@ export const DashboardHomePage = () => {
           </div>
           <div>
             {accessList.length === 0 ? (
-              <p className="ct-text-muted mb-0 py-3">{hasUnits ? "Sin accesos registrados" : "Sin unidades en este edificio"}</p>
-            ) : accessList.slice(0, 5).map((log) => (
+              <p className="ct-text-muted mb-0 py-3">
+                {hasUnits
+                  ? "Sin accesos registrados. El historial real se alimenta al validar un QR o registrar un egreso."
+                  : "Sin unidades en este edificio"}
+              </p>
+            ) : (
+              accessList.slice(0, 5).map((log) => (
               <div key={log.id} className="ct-row ct-row-hover d-flex align-items-center gap-3">
                 <span className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem", width: 40, flexShrink: 0 }}>{log.time}</span>
                 <div className="flex-grow-1 min-w-0">
@@ -162,8 +167,13 @@ export const DashboardHomePage = () => {
         </div>
         <div className="ct-grid-maintenance">
           {maintenanceList.length === 0 ? (
-            <p className="ct-text-muted mb-0 py-3">{hasUnits ? "Sin mantenimientos en curso" : "Sin unidades en este edificio"}</p>
-          ) : maintenanceList.map((item) => (
+            <p className="ct-text-muted mb-0 py-3">
+              {hasUnits
+                ? "Sin mantenimientos en curso en este edificio."
+                : "Sin unidades en este edificio"}
+            </p>
+          ) : (
+            maintenanceList.map((item) => (
             <div key={item.id} className="ct-row ct-row-hover">
               <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
                 <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{item.title}</p>
