@@ -1,88 +1,184 @@
-# 🏢 CondoTrack — Plataforma de Gestión Operativa para Edificios
+# 🏢 CondoTrack
 
-> **Plataforma centralizada para la gestión, comunicación y trazabilidad operativa de edificios y condominios.**
+## Sistema Integral de Gestión de Edificios y Condominios
 
-**CondoTrack** integra en un único sistema la administración de residentes, unidades, accesos por QR, deliveries, reservas, mudanzas, incidentes y mantenimiento, proporcionando **trazabilidad completa de la operación** en tiempo real.
+> Plataforma web Full Stack orientada a centralizar la gestión operativa de edificios y condominios, relacionando edificios, unidades, personas, usuarios, roles y actividades operativas en un único sistema.
+
+CondoTrack busca reducir la dispersión de información entre portería, planillas, WhatsApp y sistemas independientes mediante una fuente centralizada de información y trazabilidad.
 
 ---
 
-## 🎯 Problema y Solución
+## 🎯 Contexto
 
-La información operativa de los edificios suele estar dispersa entre portería, WhatsApp, planillas y sistemas aislados. Esto dificulta el seguimiento de accesos, reservas, deliveries, incidentes y tareas de mantenimiento.
+La administración de edificios y condominios involucra diariamente a diferentes actores:
 
-**CondoTrack** propone una fuente única de información que centraliza estos procesos y los relaciona directamente:
+- Administración.
+- Recepción y portería.
+- Residentes.
+- Propietarios.
+- Personal de mantenimiento.
+- Proveedores.
+
+Estas operaciones generan información relacionada con:
+
+- Edificios y unidades.
+- Personas y residentes.
+- Usuarios y roles.
+- Accesos y visitantes.
+- Deliveries y correspondencia.
+- Reservas de espacios comunes.
+- Mudanzas.
+- Incidentes.
+- Mantenimiento.
+- Comunicaciones y notificaciones.
+
+Cuando esta información se encuentra distribuida entre diferentes herramientas, resulta más difícil conocer el estado real de una operación y reconstruir su historial.
+
+CondoTrack propone centralizar esta información mediante una aplicación web Full Stack.
+
+---
+
+## ❗ Problema
+
+La operación de un edificio puede depender de diferentes canales y registros:
 
 ```text
-Edificio → Unidad → Residente → Accesos → Deliveries
-                         ↓
-                    Reservas
-                         ↓
-                    Mudanzas
-                         ↓
-                   Incidentes
-                         ↓
-                  Mantenimiento
-                         ↓
-                  Notificaciones
+Portería
+   ├── Registros manuales
+   ├── Planillas
+   ├── WhatsApp
+   └── Sistemas externos
 ```
 
-El objetivo es que un usuario pueda consultar la información relevante de un edificio o unidad, junto con el historial unificado de acciones, sin depender de herramientas informales.
+Esta fragmentación puede dificultar:
+
+- Identificar quién realizó una solicitud.
+- Conocer cuándo ocurrió una acción.
+- Determinar quién gestionó una operación.
+- Consultar el estado actual de una solicitud.
+- Relacionar una actividad con una unidad determinada.
+- Mantener un historial centralizado.
+
+El desafío principal es lograr **centralización y trazabilidad de la operación**.
 
 ---
 
-## ✨ Características Principales
+## 💡 Oportunidad
 
-- 👥 **Gestión de Estructura:** Unidades, departamentos y vinculación de residentes.
-- 🔐 **Control de Accesos:** Generación de invitaciones y validación mediante código QR en recepción.
-- 📦 **Trazabilidad de Deliveries:** Registro de paquetes en portería, alertas automáticas y confirmación de entrega.
-- 🏊 **Módulo de Reservas:** Gestión y disponibilidad en tiempo real para espacios comunes (Parrilla, SUM, Coworking).
-- 🚚 **Gestión de Mudanzas:** Solicitud y coordinación de fechas/horarios de mudanzas.
-- ⚠️ **Incidentes y Mantenimiento:** Reporte de fallas, asignación a personal técnico y seguimiento de estados.
-- 🔔 **Centro de Notificaciones:** Envío de avisos generales e informativos por edificio.
-- 📝 **Bitácora Unificada:** Historial centralizado y ejecuciones operativas filtrables por fecha.
+CondoTrack plantea transformar la operación en un flujo digital centralizado:
+
+```text
+Edificio
+   ↓
+Unidad
+   ↓
+Persona / Usuario
+   ↓
+Actividad
+   ↓
+Estado
+   ↓
+Historial
+```
+
+Conceptualmente, el sistema busca integrar dominios como:
+
+```text
+Edificio
+   ↓
+Unidad
+   ↓
+Residente / Propietario
+   ↓
+Accesos
+   ↓
+Deliveries
+   ↓
+Reservas
+   ↓
+Mudanzas
+   ↓
+Incidentes
+   ↓
+Mantenimiento
+   ↓
+Notificaciones
+```
+
+El objetivo no es únicamente reemplazar herramientas manuales por una interfaz, sino construir una **fuente centralizada de información para la operación del edificio**.
 
 ---
 
-## 🔐 Roles y Sistema de Permisos (RBAC)
+## 🎯 Objetivos
 
-El sistema implementa un modelo de seguridad basado en **5 roles explícitos**:
-
-| Rol | Descripción |
-| --- | --- |
-| `SUPER_ADMIN` | Administrador global del sistema (alta de administraciones, edificios y métricas consolidadas). |
-| `ADMIN` | Gestión operativa de los edificios a su cargo, asignación de mantenimiento y aprobaciones. |
-| `RECEPTION` | Personal de portería encargado del control de accesos, verificación de QR y recepción/entrega de paquetes. |
-| `RESIDENT` | Propietarios o inquilinos vinculados a una unidad específica (solicitudes, reservas, invitaciones y avisos). |
-| `MAINTENANCE` | Personal encargado de la recepción, atención y resolución de reportes de mantenimiento. |
+- Centralizar información operativa.
+- Relacionar edificios, unidades y personas.
+- Gestionar usuarios y roles.
+- Implementar control de acceso mediante autenticación y autorización.
+- Mejorar la trazabilidad de las operaciones.
+- Reducir procesos manuales.
+- Facilitar la administración de edificios.
+- Gestionar unidades y sus vínculos con personas.
+- Proporcionar una API REST documentada.
+- Mantener una arquitectura modular y escalable.
 
 ---
 
-## 🧱 Stack Tecnológico
+## 🔐 Roles y permisos
+
+El backend define cinco roles de sistema:
+
+| Rol | Propósito |
+|---|---|
+| `SUPER_ADMIN` | Acceso global sobre los edificios y operaciones autorizadas a nivel de sistema. |
+| `ADMIN` | Administración de edificios dentro de su alcance asignado. |
+| `RECEPTION` | Rol destinado a operaciones de recepción y portería. |
+| `RESIDENT` | Rol destinado a residentes vinculados a edificios/unidades. |
+| `MAINTENANCE` | Rol destinado a operaciones de mantenimiento. |
+
+---
+
+## 🧰 Stack tecnológico
 
 ### Backend
 
 | Tecnología | Uso |
-| --- | --- |
+|---|---|
 | Node.js | Entorno de ejecución |
 | Express | Framework para API REST |
-| TypeScript | Tipado y desarrollo del backend |
-| PostgreSQL / Neon | Base de datos relacional |
-| Sequelize | ORM para la gestión de modelos y migraciones |
-| Neon | Serverless |
-| Swagger | Documentación interactiva de la API |
-| dotenv / CORS | Variables de entorno y configuración de orígenes |
+| TypeScript | Tipado estático |
+| PostgreSQL | Base de datos relacional |
+| Neon | Plataforma utilizada para PostgreSQL |
+| Sequelize | ORM |
+| Sequelize CLI | Migraciones y seeders |
+| sequelize-typescript | Integración de Sequelize con TypeScript |
+| JWT / `jsonwebtoken` | Autenticación mediante tokens |
+| Passport | Estrategias de autenticación |
+| Google OAuth 2.0 | Autenticación con Google |
+| bcrypt | Hash de contraseñas |
+| Zod | Validación de datos |
+| Swagger JSDoc | Generación de especificación OpenAPI |
+| Swagger UI Express | Documentación interactiva |
+| dotenv | Variables de entorno |
+| CORS | Configuración de orígenes |
 
 ### Frontend
 
 | Tecnología | Uso |
-| --- | --- |
-| React | Interfaz de usuario basada en componentes |
-| Vite | Herramienta de desarrollo y empaquetado rápido |
-| JavaScript (ES6+) | Lenguaje base de desarrollo UI |
-| Bootstrap | Estilos, maquetación y componentes UI |
-| Axios | Cliente HTTP para consumo de la API REST |
-| Zustand | Manejo del estado global de la aplicación |
-| react-router-dom | Enrutamiento y navegación entre vistas |
+|---|---|
+| React | Interfaz de usuario |
+| Vite | Desarrollo y build |
+| JavaScript | Lenguaje principal del frontend |
+| Axios | Cliente HTTP |
+| React Router DOM | Routing |
+| Bootstrap | Estilos y componentes visuales |
+| React Bootstrap | Componentes Bootstrap para React |
+| Zustand | Gestión de estado |
+| `html5-qrcode` | Funcionalidades relacionadas con lectura de QR |
+| PropTypes | Validación de props |
+| ESLint | Calidad y linting |
+
+---
 
 ### Gestión y QA
 
@@ -164,53 +260,102 @@ frontend/
 
 ---
 
-## 🚀 Instalación y Configuración
+## 🚀 Instalación
 
 ### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/No-Country-simulation/S08-26-equipo-11-CondoTrack-.git
+cd S08-26-equipo-11-CondoTrack-
 ```
 
-### 2. Configurar y levantar el Backend
+### 2. Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-Crear un archivo `.env` dentro de la carpeta `backend/`:
+Configurar el archivo:
 
-```env
-PORT=3000
-DATABASE_URL=tu_url_de_postgresql
+```text
+backend/.env
 ```
 
-Ejecutar el servidor de desarrollo:
+Ejecutar las migraciones:
 
 ```bash
-npm run dev
+npm run db:migrate
 ```
 
-La API quedará disponible en `http://localhost:3000`.
+Ejecutar los seeders cuando corresponda:
 
-### 3. Configurar y levantar el Frontend
+```bash
+npm run db:seed
+```
 
-Desde la carpeta raíz:
+### 3. Frontend
+
+Desde la raíz del proyecto:
 
 ```bash
 cd frontend
 npm install
-npm run dev
 ```
 
-Vite desplegará el entorno local (habitualmente en `http://localhost:5173`).
+Configurar:
+
+```text
+frontend/.env
+```
+
+con:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
 
 ---
 
-## 📚 Documentación de API (Swagger)
+## ▶️ Ejecución local
 
-La API REST del backend se encuentra documentada interactivamente mediante Swagger. Una vez iniciado el servidor backend, ingresá a:
+### Backend
+
+Desde `backend/`:
+
+```bash
+npm run dev
+```
+
+El servidor utiliza:
+
+```text
+http://localhost:3000
+```
+
+### Frontend
+
+Desde `frontend/`:
+
+```bash
+npm run dev
+```
+
+Vite está configurado para utilizar:
+
+```text
+http://localhost:5173
+```
+
+
+## 📚 Documentación de la API (Swagger)
+
+El backend utiliza:
+
+- `swagger-jsdoc`
+- `swagger-ui-express`
+
+Con el backend ejecutándose localmente:
 
 ```text
 http://localhost:3000/api-docs
@@ -218,16 +363,23 @@ http://localhost:3000/api-docs
 
 ---
 
-## 👥 Equipo de Desarrollo
+## 👥 Equipo de desarrollo 
 
-| Nombre y Apellido | Rol en el Proyecto |
-| --- | --- |
-| Alejandro Camacho | Project Manager / Full Stack Developer |
-| Laura Espindola | Frontend Developer |
-| Valen Flores | Frontend Developer |
+| Integrante | Rol |
+|---|---|
+| Alejandro Camacho | Project Manager |
 | Alejandro Anchundia | Frontend Developer |
 | Justina Mutigliengo | Backend Developer |
 | Marcos Soria | Backend Developer (Manejo de GitHub) |
 | María Grillo | QA Lead / QA Tester |
 
 ---
+
+## 📌 Criterio de éxito
+
+El objetivo funcional de CondoTrack es que un usuario pueda seleccionar un edificio o una unidad y consultar, desde un único sistema, la información relevante de las personas relacionadas y las actividades operativas correspondientes, junto con el historial de acciones disponible.
+
+La evolución del sistema busca reducir la necesidad de consultar diferentes planillas, chats, registros manuales o herramientas independientes.
+
+---
+
