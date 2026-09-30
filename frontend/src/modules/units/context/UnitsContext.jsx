@@ -12,12 +12,17 @@ import {
   createUnit as createUnitRequest,
   listUnits,
 } from "@/modules/units/services/unitsService";
+import { useActivityLog } from "@/core/activity/ActivityLogContext";
+import { ENTITY_TYPES, RESULTS } from "@/core/activity/activityTypes";
+import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 
 const UnitsContext = createContext(null);
 
 export function UnitsProvider({ children }) {
   const [unitsByBuilding, setUnitsByBuilding] = useState({});
   const fetchedRef = useRef(new Set());
+  const { logActivity } = useActivityLog();
+  const actor = useActorLabel();
 
   const fetchUnits = useCallback(async (buildingId, force = false) => {
     if (!buildingId) return;
@@ -96,13 +101,37 @@ export function UnitsProvider({ children }) {
 
   const createUnit = useCallback(
     async (buildingId, payload) => {
-      const created = await createUnitRequest(buildingId, payload);
+      try {
+        const created = await createUnitRequest(buildingId, payload);
 
-      await refreshUnits(buildingId);
+        logActivity({
+          actor,
+          action: `Creó la unidad ${created.code || payload.code || ""}`.trim(),
+          buildingId,
+          unitId: created.id ?? null,
+          unitCode: created.code ?? payload.code ?? null,
+          entityType: ENTITY_TYPES.UNIT,
+          entityId: created.id ?? null,
+          result: RESULTS.OK,
+        });
 
-      return created;
+        await refreshUnits(buildingId);
+
+        return created;
+      } catch (err) {
+        logActivity({
+          actor,
+          action: `No pudo crear la unidad ${payload.code || ""}`.trim(),
+          buildingId,
+          unitCode: payload.code ?? null,
+          entityType: ENTITY_TYPES.UNIT,
+          result: RESULTS.ERROR,
+          detail: err?.response?.data?.message ?? null,
+        });
+        throw err;
+      }
     },
-    [refreshUnits],
+    [refreshUnits, logActivity, actor],
   );
 
   return (
