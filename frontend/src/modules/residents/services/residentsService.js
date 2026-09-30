@@ -12,6 +12,8 @@ const normalizeResidentLink = (raw = {}, unit = {}) => {
 
   return {
     id: raw.userId ?? raw.personId ?? raw.id,
+    personId: raw.personId ?? null,
+    userId: raw.userId ?? null,
     unitId: raw.unitId ?? unit.id,
     buildingId: unit.buildingId,
     name: fullName || raw.email || "",
