@@ -55,7 +55,10 @@ export const DeliveriesPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [units, setUnits] = useState([]);
+  const [unitsTotal, setUnitsTotal] = useState(0);
+  const [unitsError, setUnitsError] = useState("");
   const [unitResidents, setUnitResidents] = useState([]);
+  const [residentsError, setResidentsError] = useState("");
   const [personMap, setPersonMap] = useState({});
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
@@ -74,15 +77,28 @@ export const DeliveriesPage = () => {
   const loadError = getError(buildingId);
 
   // Unidades del edificio (para códigos y para el formulario).
+  // El error ya no se traga: un select vacío por un 403 es indistinguible de
+  // un edificio sin unidades, y hacía falta adivinar por qué el portero no
+  // veía la lista.
   useEffect(() => {
     if (!buildingId || !canRegister) return undefined;
     let cancelled = false;
     listUnits(buildingId)
-      .then(({ units: buildingUnits }) => {
-        if (!cancelled) setUnits(buildingUnits);
+      .then(({ units: buildingUnits, total }) => {
+        if (cancelled) return;
+        setUnits(buildingUnits);
+        // El backend capped en 100 por request: si el edificio tiene más, el
+        // select mostraría una lista parcial haciéndose pasar por completa.
+        setUnitsTotal(typeof total === "number" ? total : buildingUnits.length);
+        setUnitsError("");
       })
-      .catch(() => {
-        if (!cancelled) setUnits([]);
+      .catch((err) => {
+        if (cancelled) return;
+        setUnits([]);
+        setUnitsTotal(0);
+        setUnitsError(
+          apiErrorMessage(err, "No se pudieron cargar las unidades."),
+        );
       });
     return () => {
       cancelled = true;
@@ -90,6 +106,9 @@ export const DeliveriesPage = () => {
   }, [buildingId, canRegister]);
 
   // Residentes de la unidad elegida en el formulario.
+  // El contrato de GET /units/:id/residents es ADMIN/SUPER_ADMIN, así que un
+  // RECEPTION recibe 403. Antes el catch lo silenciaba y el select de
+  // destinatario quedaba vacío sin explicar por qué.
   useEffect(() => {
     if (!form.unitId) {
       return undefined;
@@ -98,10 +117,16 @@ export const DeliveriesPage = () => {
     const unit = units.find((item) => item.id === form.unitId);
     listUnitResidents(unit ?? { id: form.unitId })
       .then((rows) => {
-        if (!cancelled) setUnitResidents(rows);
+        if (cancelled) return;
+        setUnitResidents(rows);
+        setResidentsError("");
       })
-      .catch(() => {
-        if (!cancelled) setUnitResidents([]);
+      .catch((err) => {
+        if (cancelled) return;
+        setUnitResidents([]);
+        setResidentsError(
+          apiErrorMessage(err, "No se pudieron cargar los residentes."),
+        );
       });
     return () => {
       cancelled = true;
@@ -325,14 +350,33 @@ export const DeliveriesPage = () => {
                   value={form.unitId}
                   onChange={updateField("unitId")}
                   required
+                  disabled={!!unitsError}
                 >
-                  <option value="">Seleccioná una unidad</option>
+                  <option value="">
+                    {unitsError
+                      ? "No se pudieron cargar las unidades"
+                      : units.length
+                        ? "Seleccioná una unidad"
+                        : "El edificio no tiene unidades"}
+                  </option>
                   {units.map((unit) => (
                     <option key={unit.id} value={unit.id}>
                       {unit.code} · Piso {unit.floor}
                     </option>
                   ))}
                 </Form.Select>
+                {unitsError && (
+                  <Form.Text className="ct-text-muted">
+                    {unitsError} La portería puede no tener permiso para ver
+                    las unidades del edificio.
+                  </Form.Text>
+                )}
+                {!unitsError && unitsTotal > units.length && (
+                  <Form.Text className="ct-text-muted">
+                    Se muestran {units.length} de {unitsTotal} unidades. Si
+                    falta la que buscás, registrala primero en Unidades.
+                  </Form.Text>
+                )}
               </div>
               <div className="col-6">
                 <Form.Label
@@ -345,12 +389,14 @@ export const DeliveriesPage = () => {
                   value={form.personId}
                   onChange={updateField("personId")}
                   required
-                  disabled={!form.unitId}
+                  disabled={!form.unitId || !!residentsError}
                 >
                   <option value="">
-                    {form.unitId
-                      ? "Seleccioná una persona"
-                      : "Primero elegí unidad"}
+                    {residentsError
+                      ? "No se pudieron cargar los residentes"
+                      : form.unitId
+                        ? "Seleccioná una persona"
+                        : "Primero elegí unidad"}
                   </option>
                   {unitResidents.map((row) => (
                     <option
@@ -361,6 +407,12 @@ export const DeliveriesPage = () => {
                     </option>
                   ))}
                 </Form.Select>
+                {residentsError && (
+                  <Form.Text className="ct-text-muted">
+                    {residentsError} Ese endpoint es solo para
+                    administradores: pedile a un admin que registre el paquete.
+                  </Form.Text>
+                )}
               </div>
               <div className="col-6">
                 <Form.Label
