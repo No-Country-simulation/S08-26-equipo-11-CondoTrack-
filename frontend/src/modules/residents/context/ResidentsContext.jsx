@@ -8,6 +8,7 @@ import {
 } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import { ROLES } from "@/modules/auth/constants/roles";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
@@ -17,6 +18,7 @@ import {
   listUnitResidents,
 } from "@/modules/residents/services/residentsService";
 import { apiErrorMessage } from "@/core/api/api";
+import { isValidEmail, normalizeEmail } from "@/shared/utils/validators";
 
 const ResidentsContext = createContext(null);
 
@@ -26,7 +28,7 @@ const ResidentsContext = createContext(null);
 export function ResidentsProvider({ children }) {
   const [residentsByBuilding, setResidentsByBuilding] = useState({});
   const fetchedRef = useRef(new Set());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { buildings } = useBuildings();
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
@@ -81,16 +83,32 @@ export function ResidentsProvider({ children }) {
     [],
   );
 
+  // Este provider recorre todos los edificios del usuario para listar sus
+  // unidades y los residentes de cada una. Ese recorrido es trabajo de
+  // administración: el RESIDENT no entra en GET /buildings/:id/units ni en
+  // /units/:id/residents, así que llamarlo solo le generaba 403 en cada
+  // sesión sin aportarle nada (su portal usa GET /deliveries/mine y
+  // /incidents/mine, que ya son endpoints propios).
+  const canListBuildingResidents = !user?.roles?.some(
+    (role) => role.roleName === ROLES.RESIDENT,
+  );
+
   useEffect(() => {
     if (!isAuthenticated) {
       setResidentsByBuilding({});
       fetchedRef.current.clear();
       return;
     }
+    if (!canListBuildingResidents) return;
     buildings.forEach((building) =>
       fetchBuildingResidents(building.id, building.name),
     );
-  }, [isAuthenticated, buildings, fetchBuildingResidents]);
+  }, [
+    isAuthenticated,
+    canListBuildingResidents,
+    buildings,
+    fetchBuildingResidents,
+  ]);
 
   // Refresca un edificio a la fuerza (ej. tras crear+vincular un residente).
   const refreshBuilding = useCallback(
@@ -121,40 +139,40 @@ export function ResidentsProvider({ children }) {
   // Vincula una cuenta existente como residente (POST /units/:id/residents).
   // El backend solo pide { email }: la unidad se resuelve por código.
   const addResident = async ({
-    name,
     buildingId,
     buildingName,
-    unit,
+    unitId,
+    unitCode,
     email,
     phone,
     type,
   }) => {
-    const trimmedUnit = unit.trim();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = normalizeEmail(email);
 
-    if (!name.trim() || !trimmedUnit || !buildingId || !trimmedEmail) {
+    if (!unitId || !buildingId || !trimmedEmail) {
       return {
         success: false,
-        error: "Completá nombre, edificio, unidad y email.",
+        error: "Completá edificio, unidad y email.",
+      };
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      return {
+        success: false,
+        error: "El email no tiene un formato válido.",
       };
     }
 
     try {
-      const { units } = await listUnits(buildingId);
-      const target = units.find(
-        (item) => item.code.toLowerCase() === trimmedUnit.toLowerCase(),
+      // El id de la unidad viene del selector, que ya la cargó del backend:
+      // no hace falta volver a listar y casar por código.
+      const row = await linkResident(
+        { id: unitId, code: unitCode, buildingId },
+        trimmedEmail,
       );
-
-      if (!target) {
-        return {
-          success: false,
-          error: `La unidad "${trimmedUnit}" no existe en este edificio. Creala primero en Unidades.`,
-        };
-      }
-
-      const row = await linkResident(target, trimmedEmail);
       const full = {
         ...row,
+        unitId,
         buildingId,
         building: buildingName,
         phone: phone?.trim() || "—",
@@ -175,8 +193,13 @@ export function ResidentsProvider({ children }) {
 
       logActivity({
         actor,
-        action: `Vinculó al residente "${full.name}" (unidad ${trimmedUnit})`,
+        action: `Vinculó al residente "${full.name}" (unidad ${full.unit})`,
         buildingId,
+        unitId,
+        unitCode: full.unit,
+        entityType: "unit",
+        entityId: unitId,
+        result: "ok",
       });
       return { success: true };
     } catch (err) {

@@ -110,7 +110,8 @@ export const DashboardHomePage = () => {
                 </span>
                 <StatusBadge status={log.status} />
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -171,7 +172,8 @@ export const DashboardHomePage = () => {
               <p className="ct-font-mono ct-text-muted mb-2" style={{ fontSize: "0.75rem" }}>{item.unit} · {item.assigned}</p>
               <StatusBadge status={item.status} />
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

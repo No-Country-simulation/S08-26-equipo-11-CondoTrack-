@@ -11,9 +11,11 @@ import { useAuth } from "@/modules/auth/contexts/AuthContext";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
+import { ROLES } from "@/modules/auth/constants/roles";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
 import {
   listBuildingDeliveries,
+  listMyDeliveries,
   markPickedUp as markPickedUpRequest,
   registerDelivery as registerDeliveryRequest,
 } from "@/modules/deliveries/services/deliveriesService";
@@ -27,8 +29,12 @@ const DeliveriesContext = createContext(null);
 // siendo un cambio local (se pisa al refrescar).
 export function DeliveriesProvider({ children }) {
   const [deliveriesByBuilding, setDeliveriesByBuilding] = useState({});
+  // Deliveries del residente autenticado. El backend los resuelve por sus
+  // unidades vigentes (GET /deliveries/mine), así que no hay que filtrar por
+  // código de unidad, que es lo que fallaba con unidades renombradas.
+  const [mine, setMine] = useState([]);
   const fetchedRef = useRef(new Set());
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { buildings } = useBuildings();
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
@@ -74,15 +80,49 @@ export function DeliveriesProvider({ children }) {
     [],
   );
 
+  // Los deliveries del residente exigen rol RESIDENT: un ADMIN recibe 403 y
+  // se queda con la lista vacía en vez de romper la pantalla.
+  const isResident = user?.role === ROLES.RESIDENT;
+
+  // GET /deliveries/mine es solo para RESIDENT (ver listMine en el backend):
+  // un RECEPTION o ADMIN recibe 403 siempre. Antes se pedía en cada sesión y
+  // llenaba la consola de errores sin corresponder a nada, así que se pide
+  // solo cuando el rol puede leerlo.
+  const refreshMine = useCallback(async () => {
+    if (!isAuthenticated || !isResident) {
+      setMine([]);
+      return;
+    }
+    try {
+      setMine(await listMyDeliveries());
+    } catch {
+      setMine([]);
+    }
+  }, [isAuthenticated, isResident]);
+
+  // GET /buildings/:id/deliveries lo habilita `canHandle` en el backend:
+  // SUPER_ADMIN, ADMIN y RECEPTION. El RESIDENT recibe 403 y no tiene
+  // pantalla de portería, así que no se le pide el listado del edificio.
+  const canReadBuildingDeliveries = !isResident;
+
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia deliveries al cerrar sesión
       setDeliveriesByBuilding({});
       fetchedRef.current.clear();
+      setMine([]);
       return;
     }
+    refreshMine();
+    if (!canReadBuildingDeliveries) return;
     buildings.forEach((building) => fetchBuildingDeliveries(building.id));
-  }, [isAuthenticated, buildings, fetchBuildingDeliveries]);
+  }, [
+    isAuthenticated,
+    canReadBuildingDeliveries,
+    buildings,
+    fetchBuildingDeliveries,
+    refreshMine,
+  ]);
 
   const refreshBuilding = useCallback(
     async (buildingId) => {
@@ -123,7 +163,19 @@ export function DeliveriesProvider({ children }) {
       action: `Registró un delivery de ${created.carrier}`,
       buildingId,
     });
+    // Aviso para el residente: el paquete ya está en portería. El aviso de
+    // la app (el banner "Pasá por portería") se arma con los deliveries del
+    // backend, así que no depende de esta notificación.
+    notify({
+      type: "delivery",
+      title: "Paquete recibido en portería",
+      body: created.trackingNumber || created.carrier,
+      buildingId,
+      unit: created.unit,
+    });
+    // Tras registrar un paquete, el resident ya lo ve en /deliveries/mine.
     await refreshBuilding(buildingId);
+    await refreshMine();
     return created;
   };
 
@@ -172,6 +224,8 @@ export function DeliveriesProvider({ children }) {
     <DeliveriesContext.Provider
       value={{
         deliveries,
+        mine,
+        refreshMine,
         forUnit,
         forBuilding,
         notifyResident,

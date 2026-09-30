@@ -8,6 +8,9 @@ import { useReservationBooking } from "@/modules/reservations/hooks/useReservati
 import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident";
 import { listCommonAreas } from "@/modules/amenities/services/commonAreasService";
 import { bookReservation } from "@/modules/reservations/services/reservationsService";
+import { useActivityLog } from "@/core/activity/ActivityLogContext";
+import { ENTITY_TYPES, RESULTS } from "@/core/activity/activityTypes";
+import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { apiErrorMessage } from "@/core/api/api";
 
 const formatDateTime = (value) => {
@@ -34,6 +37,8 @@ export const MyReservationsPage = () => {
   const { user } = useAuth();
   const current = useCurrentResident();
   const { forMine, refreshMine, loadingMine } = useReservations();
+  const { logActivity } = useActivityLog();
+  const actor = useActorLabel();
   const { selectedSpace, selectSpace, form, updateField, booked, book, reset } =
     useReservationBooking();
   const [areas, setAreas] = useState([]);
@@ -101,13 +106,32 @@ export const MyReservationsPage = () => {
         endAt,
         notes: form.notes,
       });
+      logActivity({
+        actor,
+        action: `Reservó ${area.name} (${form.date}, ${form.timeFrom}–${form.timeTo})`,
+        buildingId: current.buildingId ?? null,
+        unitId: myUnitId,
+        entityType: ENTITY_TYPES.RESERVATION,
+        entityId: area.id,
+        result: RESULTS.OK,
+        detail: `Espacio ${area.name}`,
+      });
       book();
       // La reserva recién creada debe verse en "Mis reservas" sin recargar.
       await refreshMine();
     } catch (err) {
-      setBookingError(
-        apiErrorMessage(err, "No se pudo enviar la reserva."),
-      );
+      const message = apiErrorMessage(err, "No se pudo enviar la reserva.");
+      setBookingError(message);
+      logActivity({
+        actor,
+        action: `No pudo reservar ${area.name} (${form.date})`,
+        buildingId: current.buildingId ?? null,
+        unitId: myUnitId,
+        entityType: ENTITY_TYPES.RESERVATION,
+        entityId: area.id,
+        result: RESULTS.ERROR,
+        detail: message,
+      });
     } finally {
       setBookingSaving(false);
     }
@@ -209,7 +233,9 @@ export const MyReservationsPage = () => {
                     {bookingSaving ? "Enviando..." : "Solicitar reserva"}
                   </button>
                   <p className="ct-font-mono ct-text-faint mt-2 mb-0" style={{ fontSize: "0.6875rem" }}>
-                    Se reserva como Unidad {current.unit}. Requiere rol de residente en el edificio.
+                    {current.hasUnit
+                      ? `Se reserva como Unidad ${current.unit}. Requiere rol de residente en el edificio.`
+                      : "Necesitás una unidad asignada para reservar."}
                   </p>
                 </div>
               )}

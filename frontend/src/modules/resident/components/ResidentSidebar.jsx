@@ -45,7 +45,7 @@ export const ResidentSidebar = () => {
             <div className="d-flex align-items-center gap-2 mt-1">
               <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }} className="ct-font-mono">Unidad</span>
               <span className="ct-font-mono fw-semibold px-2 rounded" style={{ fontSize: "10px", background: "rgba(249,115,22,0.25)", color: "#fdba74" }}>
-                {current.unit}
+                {current.unitLabel}
               </span>
             </div>
           </div>

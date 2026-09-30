@@ -3,61 +3,12 @@ import PropTypes from "prop-types";
 
 const NotificationsContext = createContext(null);
 
-const SEED_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "delivery",
-    title: "Paquete recibido en portería",
-    body: "Andreani · AE-8831-2024",
-    time: "Hoy 09:15",
-    read: false,
-    buildingId: 1,
-    unit: "8B",
-  },
-  {
-    id: 2,
-    type: "access",
-    title: "Ingreso de visitante autorizado",
-    body: "Carlos Pereyra ingresó a las 08:31",
-    time: "Hoy 08:31",
-    read: false,
-    buildingId: 1,
-    unit: "8B",
-  },
-  {
-    id: 3,
-    type: "maintenance",
-    title: "Solicitud en progreso",
-    body: "Pérdida de agua → asignada a Fontanero Externo",
-    time: "Ayer 14:00",
-    read: true,
-    buildingId: 1,
-    unit: "8B",
-  },
-  {
-    id: 4,
-    type: "reservation",
-    title: "Reserva confirmada",
-    body: "Salón de Eventos · Sáb 07 Sep 19:00–23:00",
-    time: "Lun 10:22",
-    read: true,
-    buildingId: 1,
-    unit: "8B",
-  },
-  {
-    id: 5,
-    type: "incident",
-    title: "Incidente resuelto",
-    body: "Mascota sin correa -cerrado por administración",
-    time: "02 Sep 09:00",
-    read: true,
-    buildingId: 1,
-    unit: "8B",
-  },
-];
-
 export function NotificationsProvider({ children }) {
-  const [notifications, setNotifications] = useState(SEED_NOTIFICATIONS);
+  // Sin endpoint de notificaciones: la lista arranca vacía. Antes venía
+  // sembrada con cinco avisos inventados ("Andreani AE-8831-2024", "Carlos
+  // Pereyra ingresó...") que todo residente veía en su unidad 8B, tenga o no
+  // ese paquete y ese visitante.
+  const [notifications, setNotifications] = useState([]);
 
   // buildingId=null → todos los edificios. unit=null → todas las unidades del edificio.
   const notify = ({ type, title, body, buildingId = null, unit = null }) => {

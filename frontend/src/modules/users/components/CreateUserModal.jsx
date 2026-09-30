@@ -8,6 +8,7 @@ import { linkResident } from "@/modules/residents/services/residentsService";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { apiErrorMessage } from "@/core/api/api";
+import { isValidEmail, normalizeEmail } from "@/shared/utils/validators";
 
 const EMPTY_FORM = {
   nombre: "",
@@ -44,6 +45,11 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
       if (field === "buildingId") {
         next.unitId = "";
         setUnits([]);
+      }
+      // Al elegir unidad el email queda bloqueado: se muestra normalizado
+      // para que se vea exactamente la dirección con la que se vincula.
+      if (field === "unitId" && event.target.value && next.email) {
+        next.email = normalizeEmail(next.email);
       }
       return next;
     });
@@ -95,6 +101,8 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
     if (!form.telefono.trim())
       errors.telefono = "El teléfono es obligatorio.";
     if (!form.email.trim()) errors.email = "El correo es obligatorio.";
+    else if (!isValidEmail(form.email))
+      errors.email = "El correo no tiene un formato válido.";
     if (form.password.length < 8)
       errors.password = "La contraseña debe tener al menos 8 caracteres.";
     if (form.password !== form.confirmPassword)
@@ -114,7 +122,13 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
     setLoading(true);
     try {
       const result = await registerService(form);
-      const createdEmail = result?.data?.user?.email ?? form.email;
+      // El backend puede normalizar el email (minúsculas, espacios). Para
+      // vincular hay que usar el que devolvió el registro: mandar el tipeado
+      // hacía que el POST /units/:id/residents respondiera 404 sin motivo claro.
+      const createdEmail = normalizeEmail(
+        result?.data?.user?.email ?? form.email,
+      );
+      let linkFailed = false;
       let message = `Usuario ${createdEmail} creado correctamente.`;
 
       // Vincula a la unidad para que aparezca en las listas del edificio.
@@ -122,26 +136,38 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
         try {
           await linkResident(
             { id: form.unitId, buildingId: form.buildingId },
-            form.email,
+            createdEmail,
           );
           message = `Usuario ${createdEmail} creado y vinculado a la unidad.`;
         } catch (linkError) {
+          // La cuenta ya existe: se avisa y se deja el modal abierto para
+          // reintentar el vínculo, en lugar de cerrarlo y perder el error.
+          linkFailed = true;
           setError(
-            `No se pudo vincular a la unidad: ${apiErrorMessage(linkError, "intenta vincularlo desde Residentes.")}`,
+            `El usuario se creó, pero no se pudo vincular a la unidad: ${apiErrorMessage(linkError, "reintentá el vínculo desde Residentes.")}`,
           );
         }
       }
 
-      setForm(emptyForm());
-      setUnits([]);
-      setFieldErrors({});
       logActivity({
         actor,
         action: `Registró al usuario "${createdEmail}"`,
         buildingId: form.buildingId,
+        unitId: form.unitId || null,
+        unitCode: units.find((unit) => unit.id === form.unitId)?.code ?? null,
+        entityType: "unit",
+        entityId: form.unitId || null,
+        result: linkFailed ? "error" : "ok",
+        detail: linkFailed ? message : null,
       });
-      onCreated?.(message, { buildingId: form.buildingId });
-      handleClose();
+
+      if (!linkFailed) {
+        setForm(emptyForm());
+        setUnits([]);
+        setFieldErrors({});
+        onCreated?.(message, { buildingId: form.buildingId });
+        handleClose();
+      }
     } catch (err) {
       // Muestra el motivo real del backend (ej. email/documento duplicado).
       setError(
@@ -276,8 +302,16 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
                 value={form.email}
                 onChange={handleChange("email")}
                 isInvalid={!!fieldErrors.email}
+                // Con unidad elegida el email identifica la cuenta que se
+                // vincula después, así que se muestra ya normalizado.
+                disabled={!!form.unitId}
                 required
               />
+              {form.unitId && (
+                <Form.Text className="ct-text-muted">
+                  Se usará para vincular la cuenta a la unidad.
+                </Form.Text>
+              )}
               <Form.Control.Feedback type="invalid">
                 {fieldErrors.email}
               </Form.Control.Feedback>

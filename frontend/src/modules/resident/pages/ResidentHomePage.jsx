@@ -5,37 +5,80 @@ import { QRCode } from "@/modules/access/components/QRCode";
 import { useAccessLogs } from "@/modules/access/hooks/useAccessLogs";
 import { useNotifications } from "@/modules/resident/hooks/useNotifications";
 import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident";
+import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
+import { useReservations } from "@/modules/reservations/hooks/useReservations";
+import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
+import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 
-const SHORTCUTS = [
-  {
-    label: "Delivery pendiente",
-    value: 1,
-    icon: "deliveries",
-    color: "var(--color-amber-light)",
-    to: "/portal/deliveries",
-  },
-  {
-    label: "Reserva próxima",
-    value: 1,
-    icon: "reservations",
-    color: "var(--color-accent-light)",
-    to: "/portal/reservas",
-  },
-  {
-    label: "Solicitud activa",
-    value: 1,
-    icon: "maintenance",
-    color: "var(--color-purple-light)",
-    to: "/portal/solicitudes",
-  },
-];
+const ACTIVE_RESERVATION_STATUSES = ["PENDING", "CONFIRMED", "pending", "confirmed"];
 
 export const ResidentHomePage = () => {
   const { forResident } = useAccessLogs();
   const { notifications, unreadCount, iconFor, markRead } = useNotifications();
   const current = useCurrentResident();
-  const firstName = current.name.split(" ")[0];
+  const { mine: myDeliveries } = useDeliveries();
+  const { forMine } = useReservations();
+  const { forResident: myIncidents } = useIncidents();
+  const { forUnit: maintenanceForUnit } = useMaintenance();
+  const firstName = current.name ? current.name.split(" ")[0] : "";
   const myAccess = forResident(current);
+
+  // Los tres accesos contaban con valores fijos (siempre 1). Ahora salen del
+  // backend: un resident sin nada pendiente ve 0, no un número inventado.
+  // El aviso se arma con GET /deliveries/mine, no filtrando por código de
+  // unidad: el backend ya resuelve las unidades del residente, así que le
+  // aparece aunque entre desde otro navegador o en una sesión nueva.
+  const waitingDeliveries = myDeliveries.filter(
+    (delivery) =>
+      delivery.status === "RECEIVED" ||
+      delivery.status === "NOTIFIED" ||
+      delivery.status === "pending" ||
+      delivery.status === "notified",
+  );
+
+  const pendingDeliveries = waitingDeliveries.length;
+
+  const upcomingReservations = forMine().filter((reservation) => {
+    if (!ACTIVE_RESERVATION_STATUSES.includes(reservation.status)) return false;
+    if (!reservation.endAt) return true;
+    const end = new Date(reservation.endAt);
+    return Number.isNaN(end.getTime()) || end >= new Date();
+  }).length;
+
+  const activeRequests =
+    myIncidents().filter(
+      (incident) =>
+        incident.status === "OPEN" ||
+        incident.status === "IN_PROGRESS" ||
+        incident.status === "open" ||
+        incident.status === "in_progress",
+    ).length +
+    maintenanceForUnit(current.unit).filter((item) => item.status !== "resolved")
+      .length;
+
+  const shortcuts = [
+    {
+      label: "Delivery pendiente",
+      value: pendingDeliveries,
+      icon: "deliveries",
+      color: "var(--color-amber-light)",
+      to: "/portal/deliveries",
+    },
+    {
+      label: "Reserva próxima",
+      value: upcomingReservations,
+      icon: "reservations",
+      color: "var(--color-accent-light)",
+      to: "/portal/reservas",
+    },
+    {
+      label: "Solicitud activa",
+      value: activeRequests,
+      icon: "maintenance",
+      color: "var(--color-purple-light)",
+      to: "/portal/solicitudes",
+    },
+  ];
 
   return (
     <div className="ct-main-scroll">
@@ -58,12 +101,45 @@ export const ResidentHomePage = () => {
             color: "var(--color-ink)",
           }}
         >
-          Hola, {firstName}
+          Hola{firstName ? `, ${firstName}` : ""}
         </h2>
         <p className="ct-text-muted mb-0 mt-1">
-          Unidad {current.unit} · {current.building}
+          {current.hasUnit
+            ? `Unidad ${current.unit} · ${current.buildingLabel}`
+            : "No tenés una unidad asignada. Pedí al administrador que vincule tu cuenta."}
         </p>
       </div>
+
+      {waitingDeliveries.length > 0 && (
+        <div
+          className="ct-card p-4 d-flex flex-column flex-sm-row align-items-sm-center gap-3 mb-4"
+          style={{ background: "var(--color-amber-light)" }}
+        >
+          <div className="flex-grow-1">
+            <p
+              className="mb-0 fw-semibold"
+              style={{ color: "var(--color-ink)" }}
+            >
+              {waitingDeliveries.length === 1
+                ? "Tenés 1 paquete en portería"
+                : `Tenés ${waitingDeliveries.length} paquetes en portería`}
+            </p>
+            <p className="ct-text-muted mb-0 mt-1" style={{ fontSize: "0.8125rem" }}>
+              {waitingDeliveries
+                .map((delivery) => delivery.carrier)
+                .filter(Boolean)
+                .join(" · ") || "Pasá a retirarlo cuando quieras."}
+            </p>
+          </div>
+          <Link
+            to="/portal/deliveries"
+            className="btn text-white flex-shrink-0"
+            style={{ background: "var(--color-amber)" }}
+          >
+            Pasá por portería
+          </Link>
+        </div>
+      )}
 
       <div className="row g-4">
         <div className="col-lg-4 d-flex flex-column gap-4">
@@ -75,6 +151,13 @@ export const ResidentHomePage = () => {
               Mi código QR
             </p>
             <QRCode size={100} />
+            <p
+              className="ct-text-faint mb-0 text-center"
+              style={{ fontSize: "0.6875rem", lineHeight: 1.4 }}
+            >
+              Vista previa. El código de acceso real todavía no está
+              disponible.
+            </p>
             <Link
               to="/portal/visitas"
               className="btn w-100 text-white"
@@ -85,7 +168,7 @@ export const ResidentHomePage = () => {
           </div>
 
           <div className="d-flex flex-column gap-3">
-            {SHORTCUTS.map((shortcut) => (
+            {shortcuts.map((shortcut) => (
               <Link
                 key={shortcut.label}
                 to={shortcut.to}
@@ -195,11 +278,19 @@ export const ResidentHomePage = () => {
           <div className="ct-card">
             <div className="ct-card-header">
               <h3 className="ct-card-title">
-                Actividad reciente -Unidad {current.unit}
+                Actividad reciente
+                {current.hasUnit ? ` — Unidad ${current.unit}` : ""}
               </h3>
             </div>
             <div>
-              {myAccess.map((log) => (
+              {myAccess.length === 0 ? (
+                <p className="ct-text-muted mb-0 p-3">
+                  {current.hasUnit
+                    ? "Todavía no hay accesos registrados para tu unidad."
+                    : "Necesitás una unidad asignada para ver tus accesos."}
+                </p>
+              ) : (
+                myAccess.map((log) => (
                 <div
                   key={log.id}
                   className="ct-row ct-row-hover d-flex align-items-center gap-3"
@@ -238,7 +329,8 @@ export const ResidentHomePage = () => {
                   </span>
                   <StatusBadge status={log.status} />
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
