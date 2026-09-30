@@ -1,22 +1,136 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Alert } from "react-bootstrap";
-import { Icon } from "@/shared/components/Icon";
-import { KpiCard } from "@/shared/components/KpiCard";
 import { StatusBadge } from "@/shared/components/StatusBadge";
-import { useAccessLogs } from "@/modules/access/hooks/useAccessLogs";
-import { VISITOR_AUTHS } from "@/modules/access/data/visitors.data";
-import { RegisterAccessModal } from "@/modules/access/components/RegisterAccessModal";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
+import {
+  registerExit,
+  searchVisits,
+  validateQr,
+} from "@/modules/access/services/accessService";
+import { QrScanner } from "@/modules/access/components/QrScanner";
+import { apiErrorMessage } from "@/core/api/api";
 
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleString("es-AR", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
+// Flujo de portería contra la API real:
+// - Validar QR: registra el ENTRY y deja la autorización en READ.
+// - Buscar por DNI/apellido: lista autorizaciones del alcance propio.
+// - Registrar salida: crea el evento EXIT (exige ENTRY previo, sin duplicados).
+// Sin mocks: la tabla vieja y el registro manual salieron porque el backend
+// no expone carga manual de accesos (el ingreso nace del QR validado).
 export const AccessPage = () => {
-  const { building } = useOutletContext();
-  const { forBuilding } = useAccessLogs();
-  const logs = forBuilding(building?.id);
-  const ingressCount = logs.filter((log) => log.direction === "Ingreso").length;
-  const egressCount = logs.filter((log) => log.direction === "Egreso").length;
-  const deniedCount = logs.filter((log) => log.status === "denied").length;
-  const [showRegister, setShowRegister] = useState(false);
+  // En /dashboard viene del layout; en /recepcion, del primer edificio propio.
+  const outlet = useOutletContext();
+  const { user } = useAuth();
+  const building = outlet?.building ?? user?.buildings?.[0] ?? null;
+
+  const [qrToken, setQrToken] = useState("");
+  const [validated, setValidated] = useState(null);
+  const [validating, setValidating] = useState(false);
+  const [validateError, setValidateError] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [exitingId, setExitingId] = useState(null);
+  const [exitError, setExitError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const runValidation = async (token) => {
+    setValidating(true);
+    try {
+      const result = await validateQr(token);
+      setValidated(result);
+      setQrToken("");
+      setSuccessMessage(
+        `Ingreso registrado: ${result.name || "visitante"} · Unidad ${result.unit?.code ?? "—"}.`,
+      );
+    } catch (err) {
+      setValidateError(
+        apiErrorMessage(err, "No se pudo validar el QR."),
+      );
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleValidate = async (event) => {
+    event.preventDefault();
+    setValidateError("");
+    setValidated(null);
+
+    if (!qrToken.trim()) {
+      setValidateError("Ingresá el token del QR.");
+      return;
+    }
+
+    await runValidation(qrToken);
+  };
+
+  const handleScanned = async (token) => {
+    setShowScanner(false);
+    setValidateError("");
+    setValidated(null);
+    await runValidation(token);
+  };
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    setSearchError("");
+    setExitError("");
+
+    if (!query.trim()) {
+      setSearchError("Escribí un DNI o apellido para buscar.");
+      return;
+    }
+
+    setSearching(true);
+    try {
+      setResults(await searchVisits(query));
+      setSearched(true);
+    } catch (err) {
+      setResults([]);
+      setSearched(false);
+      setSearchError(apiErrorMessage(err, "No se pudo buscar."));
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleExit = async (authorization) => {
+    setExitError("");
+    setExitingId(authorization.id);
+    try {
+      await registerExit(authorization.id);
+      setSuccessMessage(
+        `Salida registrada: ${authorization.name || "visitante"}.`,
+      );
+      if (query.trim()) {
+        setResults(await searchVisits(query));
+      }
+    } catch (err) {
+      setExitError(
+        apiErrorMessage(err, "No se pudo registrar la salida."),
+      );
+    } finally {
+      setExitingId(null);
+    }
+  };
 
   return (
     <div className="ct-main-scroll">
@@ -26,89 +140,151 @@ export const AccessPage = () => {
         </Alert>
       )}
 
-      <div className="ct-grid-kpi-3 mb-4">
-        <KpiCard label="Ingresos hoy" value={ingressCount} sub={building?.name ?? ""} />
-        <KpiCard label="Egresos hoy" value={egressCount} sub={building?.name ?? ""} />
-        <KpiCard label="Accesos denegados" value={deniedCount} sub={`Último: ${logs.find((l) => l.status === "denied")?.time ?? "—"}`} />
-      </div>
+      <p className="ct-font-mono ct-text-muted mb-4" style={{ fontSize: "0.75rem" }}>
+        Portería{building?.name ? ` · ${building.name}` : ""}
+      </p>
 
-      <div className="ct-grid-main mb-4">
-        <div className="ct-card overflow-hidden">
-          <div className="ct-card-header">
-            <p className="ct-font-mono text-uppercase ct-text-muted mb-0" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
-              Registro de accesos
+      <div className="row g-4">
+        <div className="col-lg-5">
+          <div className="ct-card p-4">
+            <p className="ct-font-mono text-uppercase ct-text-muted mb-3" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+              Validar QR de ingreso
             </p>
-            <div className="d-flex align-items-center gap-3">
-              <button
-                type="button"
-                className="btn btn-sm text-white d-flex align-items-center gap-2"
-                style={{ background: "var(--color-accent)" }}
-                onClick={() => setShowRegister(true)}
+            <form onSubmit={handleValidate}>
+              <div className="d-flex gap-2 mb-3">
+                <input
+                  className="form-control form-control-sm ct-font-mono"
+                  placeholder="Pegar token del QR…"
+                  value={qrToken}
+                  onChange={(event) => setQrToken(event.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-sm text-white flex-shrink-0"
+                  style={{ background: "var(--color-accent)" }}
+                  disabled={validating}
+                >
+                  {validating ? "Validando..." : "Validar"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                  onClick={() => setShowScanner((v) => !v)}
+                >
+                  Escanear
+                </button>
+              </div>
+            </form>
+            {showScanner && (
+              <QrScanner
+                onScan={handleScanned}
+                onClose={() => setShowScanner(false)}
+              />
+            )}
+            {validateError && (
+              <Alert variant="danger" className="py-2 small mb-0">
+                {validateError}
+              </Alert>
+            )}
+            {validated && (
+              <div
+                className="rounded-3 p-3 mt-3"
+                style={{ background: "var(--color-green-light)" }}
               >
-                <Icon name="plus" size={13} />
-                Registrar acceso
-              </button>
-              <button type="button" className="btn btn-sm ct-card-link d-flex align-items-center gap-2">
-                <Icon name="export" size={12} />
-                Exportar
-              </button>
+                <p className="mb-0 fw-semibold" style={{ color: "var(--color-ink)" }}>
+                  {validated.name || "Visitante habilitado"}
+                </p>
+                <p className="ct-font-mono ct-text-muted mb-0 mt-1" style={{ fontSize: "0.75rem" }}>
+                  {validated.relation} · Unidad {validated.unit?.code ?? "—"}
+                </p>
+                <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>
+                  Válido hasta {formatDateTime(validated.validUntil)}
+                </p>
+                <div className="mt-2">
+                  <StatusBadge status="active" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="col-lg-7">
+          <div className="ct-card p-4">
+            <p className="ct-font-mono text-uppercase ct-text-muted mb-3" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+              Buscar visita por DNI o apellido
+            </p>
+            <form onSubmit={handleSearch}>
+              <div className="d-flex gap-2 mb-3">
+                <input
+                  className="form-control form-control-sm"
+                  placeholder="Ej. 30123456 o García…"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                  disabled={searching}
+                >
+                  {searching ? "Buscando..." : "Buscar"}
+                </button>
+              </div>
+            </form>
+            {searchError && (
+              <Alert variant="danger" className="py-2 small mb-3">
+                {searchError}
+              </Alert>
+            )}
+            {exitError && (
+              <Alert variant="danger" className="py-2 small mb-3">
+                {exitError}
+              </Alert>
+            )}
+
+            {searched && results.length === 0 && (
+              <p className="ct-text-muted mb-0">Sin resultados para esa búsqueda.</p>
+            )}
+            <div className="d-flex flex-column gap-2">
+              {results.map((authorization) => (
+                <div
+                  key={authorization.id}
+                  className="ct-row d-flex align-items-center gap-3"
+                >
+                  <div
+                    className="ct-avatar flex-shrink-0"
+                    style={{ width: 32, height: 32, fontSize: "0.75rem" }}
+                  >
+                    {(authorization.name || "?").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-grow-1 min-w-0">
+                    <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>
+                      {authorization.name || "Sin nombre"}
+                    </p>
+                    <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>
+                      {authorization.relation} · Unidad {authorization.unit?.code ?? "—"}
+                      {" · "}
+                      {formatDateTime(authorization.validUntil)}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 d-flex align-items-center gap-2">
+                    <StatusBadge status={authorization.status} />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      disabled={exitingId === authorization.id}
+                      onClick={() => handleExit(authorization)}
+                    >
+                      {exitingId === authorization.id
+                        ? "Registrando..."
+                        : "Salida"}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <table className="ct-table mb-0">
-            <thead>
-              <tr>
-                {["Hora", "Persona", "Tipo", "Unidad", "Método", "Dirección", "Estado"].map((header) => (
-                  <th key={header}>{header}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id}>
-                  <td className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem" }}>{log.time}</td>
-                  <td className="fw-medium" style={{ color: "var(--color-ink)" }}>{log.person}</td>
-                  <td className="ct-text-muted">{log.type}</td>
-                  <td className="ct-font-mono" style={{ fontSize: "0.75rem" }}>{log.unit}</td>
-                  <td className="ct-text-muted" style={{ fontSize: "0.75rem" }}>{log.method}</td>
-                  <td className="ct-font-mono" style={{ fontSize: "0.75rem", color: log.direction === "Ingreso" ? "var(--color-green)" : "var(--color-ink-muted)" }}>
-                    {log.direction}
-                  </td>
-                  <td>
-                    <StatusBadge status={log.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="ct-card">
-          <div className="ct-card-header">
-            <p className="ct-font-mono text-uppercase ct-text-muted mb-0" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
-              Visitantes autorizados
-            </p>
-          </div>
-          <div>
-            {VISITOR_AUTHS.length === 0 && <p className="ct-text-muted px-3 py-3 mb-0">Sin autorizaciones vigentes.</p>}
-            {VISITOR_AUTHS.map((visitor) => (
-              <div key={visitor.id} className="ct-row ct-row-hover">
-                <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{visitor.name}</p>
-                <p className="ct-font-mono ct-text-muted mb-1" style={{ fontSize: "0.75rem" }}>
-                  {visitor.relation} · válido hasta {visitor.validUntil}
-                </p>
-                <StatusBadge status={visitor.status === "expired" ? "resolved" : "active"} />
-              </div>
-            ))}
-          </div>
         </div>
       </div>
-
-      <RegisterAccessModal
-        show={showRegister}
-        onHide={() => setShowRegister(false)}
-        defaultBuildingId={building?.id}
-        onRegistered={() => setSuccessMessage("Acceso registrado correctamente.")}
-      />
     </div>
   );
 };
