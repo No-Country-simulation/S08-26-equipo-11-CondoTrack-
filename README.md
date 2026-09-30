@@ -1,121 +1,233 @@
-# Backend — CondoTrack API
+# 🏢 CondoTrack — Plataforma de Gestión Operativa para Edificios
 
-API REST de CondoTrack, desarrollada con Node.js, TypeScript y Express para gestionar edificios, unidades y autenticación de usuarios. Utiliza PostgreSQL y Sequelize para la persistencia de datos.
+> **Plataforma centralizada para la gestión, comunicación y trazabilidad operativa de edificios y condominios.**
 
-## Stack tecnológico
+**CondoTrack** integra en un único sistema la administración de residentes, unidades, accesos por QR, deliveries, reservas, mudanzas, incidentes y mantenimiento, proporcionando **trazabilidad completa de la operación** en tiempo real.
 
-- Node.js, TypeScript y Express
-- PostgreSQL, Sequelize y Sequelize CLI
-- Zod para validar datos de entrada
-- JWT y bcrypt para la autenticación local
-- Passport y Google OAuth 2.0 para el acceso con Google
-- `swagger-jsdoc` y Swagger UI para la documentación de la API
+---
 
-## Estructura del backend
+## 🎯 Problema y Solución
+
+La información operativa de los edificios suele estar dispersa entre portería, WhatsApp, planillas y sistemas aislados. Esto dificulta el seguimiento de accesos, reservas, deliveries, incidentes y tareas de mantenimiento.
+
+**CondoTrack** propone una fuente única de información que centraliza estos procesos y los relaciona directamente:
+
+```text
+Edificio → Unidad → Residente → Accesos → Deliveries
+                         ↓
+                    Reservas
+                         ↓
+                    Mudanzas
+                         ↓
+                   Incidentes
+                         ↓
+                  Mantenimiento
+                         ↓
+                  Notificaciones
+```
+
+El objetivo es que un usuario pueda consultar la información relevante de un edificio o unidad, junto con el historial unificado de acciones, sin depender de herramientas informales.
+
+---
+
+## ✨ Características Principales
+
+- 👥 **Gestión de Estructura:** Unidades, departamentos y vinculación de residentes.
+- 🔐 **Control de Accesos:** Generación de invitaciones y validación mediante código QR en recepción.
+- 📦 **Trazabilidad de Deliveries:** Registro de paquetes en portería, alertas automáticas y confirmación de entrega.
+- 🏊 **Módulo de Reservas:** Gestión y disponibilidad en tiempo real para espacios comunes (Parrilla, SUM, Coworking).
+- 🚚 **Gestión de Mudanzas:** Solicitud y coordinación de fechas/horarios de mudanzas.
+- ⚠️ **Incidentes y Mantenimiento:** Reporte de fallas, asignación a personal técnico y seguimiento de estados.
+- 🔔 **Centro de Notificaciones:** Envío de avisos generales e informativos por edificio.
+- 📝 **Bitácora Unificada:** Historial centralizado y ejecuciones operativas filtrables por fecha.
+
+---
+
+## 🔐 Roles y Sistema de Permisos (RBAC)
+
+El sistema implementa un modelo de seguridad basado en **5 roles explícitos**:
+
+| Rol | Descripción |
+| --- | --- |
+| `SUPER_ADMIN` | Administrador global del sistema (alta de administraciones, edificios y métricas consolidadas). |
+| `ADMIN` | Gestión operativa de los edificios a su cargo, asignación de mantenimiento y aprobaciones. |
+| `RECEPTION` | Personal de portería encargado del control de accesos, verificación de QR y recepción/entrega de paquetes. |
+| `RESIDENT` | Propietarios o inquilinos vinculados a una unidad específica (solicitudes, reservas, invitaciones y avisos). |
+| `MAINTENANCE` | Personal encargado de la recepción, atención y resolución de reportes de mantenimiento. |
+
+---
+
+## 🧱 Stack Tecnológico
+
+### Backend
+
+| Tecnología | Uso |
+| --- | --- |
+| Node.js | Entorno de ejecución |
+| Express | Framework para API REST |
+| TypeScript | Tipado y desarrollo del backend |
+| PostgreSQL / Neon | Base de datos relacional |
+| Sequelize | ORM para la gestión de modelos y migraciones |
+| Neon | Serverless |
+| Swagger | Documentación interactiva de la API |
+| dotenv / CORS | Variables de entorno y configuración de orígenes |
+
+### Frontend
+
+| Tecnología | Uso |
+| --- | --- |
+| React | Interfaz de usuario basada en componentes |
+| Vite | Herramienta de desarrollo y empaquetado rápido |
+| JavaScript (ES6+) | Lenguaje base de desarrollo UI |
+| Bootstrap | Estilos, maquetación y componentes UI |
+| Axios | Cliente HTTP para consumo de la API REST |
+| Zustand | Manejo del estado global de la aplicación |
+| react-router-dom | Enrutamiento y navegación entre vistas |
+
+### Gestión y QA
+
+| Herramienta | Uso |
+| --- | --- |
+| GitHub Projects | Gestión del Backlog, Épicas e Historias de Usuario |
+| Testing / QA | Pruebas funcionales, validación de API REST y casos de prueba |
+
+---
+
+## 🏗 Arquitectura del Proyecto
+
+El backend utiliza una arquitectura modular, organizada mediante la carpeta `modules/`. Cada módulo agrupa los componentes relacionados con una determinada funcionalidad:
+
+```text
+Módulo
+├── routes
+├── controllers
+├── services
+└── models
+```
+
+La solución se divide formalmente en dos capas principales:
+
+```text
+CondoTrack
+├── backend/    ──> API REST y Lógica de Negocio
+└── frontend/   ──> Aplicación Web SPA
+```
+
+---
+
+## 📁 Estructura de Carpetas
+
+### Backend
 
 ```text
 backend/
-├── config/            # Configuración de Sequelize CLI
-├── migrations/        # Cambios en la estructura de la base de datos
-├── seeders/           # Datos iniciales
 ├── src/
-│   ├── config/        # Variables de entorno y Swagger
-│   ├── database/      # Conexión y relaciones entre modelos
-│   ├── docs/          # Documentación OpenAPI
+│   ├── config/
+│   ├── modules/
+│   │   ├── buildings/
+│   │   ├── units/
+│   │   ├── residents/
+│   │   ├── accesses/
+│   │   ├── deliveries/
+│   │   ├── reservations/
+│   │   ├── moves/
+│   │   ├── incidents/
+│   │   ├── maintenance/
+│   │   └── notifications/
 │   ├── middlewares/
-│   ├── modules/       # Módulos de autenticación, edificios y unidades
 │   ├── routes/
 │   ├── app.ts
 │   └── server.ts
-├── .env.example
+├── .env
 ├── package.json
 └── tsconfig.json
 ```
 
-## Instalación
+### Frontend
 
-Clonar el repositorio e ingresar al backend:
+```text
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   ├── modules/
+│   ├── services/
+│   ├── store/
+│   ├── routes/
+│   ├── assets/
+│   ├── App.jsx
+│   └── main.jsx
+├── .env
+├── package.json
+└── vite.config.js
+```
+
+---
+
+## 🚀 Instalación y Configuración
+
+### 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/No-Country-simulation/S08-26-equipo-11-CondoTrack-.git
-cd S08-26-equipo-11-CondoTrack-/backend
+```
+
+### 2. Configurar y levantar el Backend
+
+```bash
+cd backend
 npm install
 ```
 
-## Variables de entorno
-
-Crear un archivo `backend/.env` tomando como referencia `backend/.env.example`:
+Crear un archivo `.env` dentro de la carpeta `backend/`:
 
 ```env
 PORT=3000
-NODE_ENV=development
 DATABASE_URL=tu_url_de_postgresql
-
-JWT_SECRET=una_clave_larga_y_secreta
-JWT_EXPIRES_IN=90d
-
-GOOGLE_CLIENT_ID=tu_client_id
-GOOGLE_CLIENT_SECRET=tu_client_secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
-
-SEED_SUPER_ADMIN_EMAIL=superadmin@example.com
-SEED_SUPER_ADMIN_PASSWORD=una_contraseña_segura
 ```
 
-## Base de datos
-
-La configuración de Sequelize CLI se encuentra en `backend/config/config.cjs`. Las migraciones están en `backend/migrations/` y los seeders en `backend/seeders/`.
-
-Desde la carpeta `backend`, ejecutar:
-
-```bash
-npm run db:migrate
-npm run db:seed
-```
-
-## Ejecución
-
-Iniciar el servidor en desarrollo:
+Ejecutar el servidor de desarrollo:
 
 ```bash
 npm run dev
 ```
 
-Compilar TypeScript:
+La API quedará disponible en `http://localhost:3000`.
+
+### 3. Configurar y levantar el Frontend
+
+Desde la carpeta raíz:
 
 ```bash
-npm run build
+cd frontend
+npm install
+npm run dev
 ```
 
-Ejecutar la versión compilada:
+Vite desplegará el entorno local (habitualmente en `http://localhost:5173`).
 
-```bash
-npm start
-```
+---
 
-## Autenticación y permisos
+## 📚 Documentación de API (Swagger)
 
-CondoTrack ofrece registro e inicio de sesión con email y contraseña, además de autenticación con Google OAuth 2.0.
-
-| Método | Ruta                        | Función                                                        |
-| ------ | --------------------------- | -------------------------------------------------------------- |
-| `POST` | `/api/auth/register`        | Registrar un usuario con email y contraseña                    |
-| `POST` | `/api/auth/login`           | Iniciar sesión con email y contraseña                          |
-| `GET`  | `/api/auth/google`          | Iniciar el flujo de autenticación con Google                   |
-| `GET`  | `/api/auth/google/callback` | Recibir la respuesta de Google y devolver un JWT de CondoTrack |
-
-Para llamar a un endpoint protegido, enviar el token en el encabezado:
-
-```http
-Authorization: Bearer <token>
-```
-
-## Documentación Swagger
-
-Las especificaciones OpenAPI se mantienen en `backend/src/docs/*.docs.ts` mediante `swagger-jsdoc`. Con el servidor iniciado, Swagger UI está disponible en:
+La API REST del backend se encuentra documentada interactivamente mediante Swagger. Una vez iniciado el servidor backend, ingresá a:
 
 ```text
 http://localhost:3000/api-docs
 ```
 
-Para probar rutas protegidas desde Swagger, usar **Authorize** e ingresar un JWT válido.
+---
+
+## 👥 Equipo de Desarrollo
+
+| Nombre y Apellido | Rol en el Proyecto |
+| --- | --- |
+| Alejandro Camacho | Project Manager / Full Stack Developer |
+| Laura Espindola | Frontend Developer |
+| Valen Flores | Frontend Developer |
+| Alejandro Anchundia | Frontend Developer |
+| Justina Mutigliengo | Backend Developer |
+| Marcos Soria | Backend Developer (Manejo de GitHub) |
+| María Grillo | QA Lead / QA Tester |
+
+---
