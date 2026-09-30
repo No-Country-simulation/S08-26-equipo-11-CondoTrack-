@@ -76,6 +76,17 @@ export function IncidentsProvider({ children }) {
     [],
   );
 
+  // GET /buildings/:buildingId/incidents es ADMIN/SUPER_ADMIN
+  // (authorizeBuildingParam en building-incident.routes.ts). El resto de los
+  // roles recibe 403 garantizado, así que no se pide: el RESIDENT usa
+  // /incidents/mine y la portería no tiene pantalla de incidentes. Antes se
+  // pedía para todo usuario autenticado y llenaba la consola de 403.
+  const canReadBuildingIncidents = Boolean(
+    user?.roles?.some(
+      (role) => role.roleName === "ADMIN" || role.roleName === "SUPER_ADMIN",
+    ),
+  );
+
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia incidentes al cerrar sesión
@@ -84,8 +95,14 @@ export function IncidentsProvider({ children }) {
       fetchedRef.current.clear();
       return;
     }
+    if (!canReadBuildingIncidents) return;
     buildings.forEach((building) => fetchBuildingIncidents(building.id));
-  }, [isAuthenticated, buildings, fetchBuildingIncidents]);
+  }, [
+    isAuthenticated,
+    canReadBuildingIncidents,
+    buildings,
+    fetchBuildingIncidents,
+  ]);
 
   // Los residentes no pueden usar GET /buildings/:id/incidents (403): sus
   // incidentes llegan por /incidents/mine, que ya viene filtrado por unidad.

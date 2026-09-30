@@ -61,7 +61,13 @@ export const DashboardHomePage = () => {
             <Link to="/dashboard/accesos" className="ct-card-link">Ver todos</Link>
           </div>
           <div>
-            {logs.slice(0, 5).map((log) => (
+            {logs.length === 0 ? (
+              <p className="ct-text-muted mb-0 py-3">
+                Sin accesos registrados. El historial real se alimenta al
+                validar un QR o registrar un egreso.
+              </p>
+            ) : (
+              logs.slice(0, 5).map((log) => (
               <div key={log.id} className="ct-row ct-row-hover d-flex align-items-center gap-3">
                 <span className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem", width: 40, flexShrink: 0 }}>{log.time}</span>
                 <div className="flex-grow-1 min-w-0">
@@ -73,7 +79,8 @@ export const DashboardHomePage = () => {
                 </span>
                 <StatusBadge status={log.status} />
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -119,7 +126,12 @@ export const DashboardHomePage = () => {
           <Link to="/dashboard/mantenimiento" className="ct-card-link">Ver todos</Link>
         </div>
         <div className="ct-grid-maintenance">
-          {inProgressMaintenance.map((item) => (
+          {inProgressMaintenance.length === 0 ? (
+            <p className="ct-text-muted mb-0 py-3">
+              Sin mantenimientos en curso en este edificio.
+            </p>
+          ) : (
+            inProgressMaintenance.map((item) => (
             <div key={item.id} className="ct-row ct-row-hover">
               <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
                 <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{item.title}</p>
@@ -128,7 +140,8 @@ export const DashboardHomePage = () => {
               <p className="ct-font-mono ct-text-muted mb-2" style={{ fontSize: "0.75rem" }}>{item.unit} · {item.assigned}</p>
               <StatusBadge status={item.status} />
             </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

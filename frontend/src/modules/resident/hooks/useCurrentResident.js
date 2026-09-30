@@ -1,31 +1,40 @@
 import { useAuth } from "@/modules/auth/contexts/AuthContext";
-import { CURRENT_RESIDENT as MOCK_RESIDENT } from "@/modules/residents/data/residents.data";
 
-// Adapta el usuario logueado a la forma que espera el portal del residente
-// ({ id, buildingId, name, unit, building, email, ... }).
-// Si la sesión no trae unidad/edificio (ej. Google sin rol asignado), usa la
-// persona mock para que las pantallas sigan funcionando.
+/**
+ * Adapta el usuario logueado a la forma que espera el portal del residente
+ * ({ id, buildingId, name, unit, building, email, ... }).
+ *
+ * Todo sale de la sesión real. Antes esta función sembraba sus propios huecos
+ * con un residente de ejemplo, así que un usuario sin unidad asignada veía en
+ * pantalla la unidad, el edificio y el teléfono de otra persona. Un dato que
+ * no existe se devuelve como null y se explica con las etiquetas, nunca se
+ * inventa.
+ */
 export const useCurrentResident = () => {
   const { user } = useAuth();
 
-  if (!user) return MOCK_RESIDENT;
-
-  const fullName = `${user.nombre ?? ""} ${user.apellido ?? ""}`.trim();
-  const firstUnit = user.units?.[0];
-  const firstBuilding = user.buildings?.[0];
+  const fullName = `${user?.nombre ?? ""} ${user?.apellido ?? ""}`.trim();
+  const firstUnit = user?.units?.[0] ?? null;
+  const firstBuilding = user?.buildings?.[0] ?? null;
+  const name = fullName || user?.email || "";
 
   return {
-    ...MOCK_RESIDENT,
-    id: user.id ?? MOCK_RESIDENT.id,
-    name: fullName || user.email || MOCK_RESIDENT.name,
-    email: user.email ?? MOCK_RESIDENT.email,
-    phone: user.telefono || MOCK_RESIDENT.phone,
-    unit: firstUnit?.code ?? MOCK_RESIDENT.unit,
+    id: user?.id ?? null,
+    name,
+    email: user?.email ?? "",
+    phone: user?.telefono || null,
+    unit: firstUnit?.code ?? null,
     unitId: firstUnit?.id ?? null,
     unitFloor: firstUnit?.floor ?? null,
     unitType: firstUnit?.unitType ?? null,
-    building: firstBuilding?.name ?? MOCK_RESIDENT.building,
-    buildingId:
-      firstBuilding?.id ?? firstUnit?.buildingId ?? MOCK_RESIDENT.buildingId,
+    building: firstBuilding?.name ?? null,
+    buildingId: firstBuilding?.id ?? firstUnit?.buildingId ?? null,
+
+    // Etiquetas listas para pintar. Un usuario sin rol de residente no tiene
+    // unidad: decirlo es más útil que mostrar un código que no es suyo.
+    unitLabel: firstUnit?.code ?? "sin unidad",
+    buildingLabel: firstBuilding?.name ?? "sin edificio",
+    hasUnit: Boolean(firstUnit),
+    hasBuilding: Boolean(firstBuilding),
   };
 };

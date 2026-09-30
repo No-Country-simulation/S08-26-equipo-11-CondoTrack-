@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from "react";
 import PropTypes from "prop-types";
-import { ACCESS_LOGS } from "@/modules/access/data/accessLogs.data";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
@@ -8,7 +7,10 @@ import { useNotificationsStore } from "@/modules/notifications/context/Notificat
 const AccessLogsContext = createContext(null);
 
 export function AccessLogsProvider({ children }) {
-  const [logs, setLogs] = useState(ACCESS_LOGS);
+  // El backend expone validate/exit pero no un listado de eventos, así que no
+  // hay historial real para mostrar. La lista arranca vacía en vez de sembrar
+  // accesos ficticios; el rastro real de la sesión vive en el log de actividad.
+  const [logs, setLogs] = useState([]);
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
   const { notify } = useNotificationsStore();

@@ -101,7 +101,9 @@ export const VisitsPage = () => {
               {latestVisit ? "Último pase generado" : "Código de acceso"}
             </p>
             <p className="ct-font-mono ct-text-faint mb-0" style={{ fontSize: "0.75rem" }}>
-              Unidad {current.unit} · {current.building}
+              {current.hasUnit
+                ? `Unidad ${current.unit} · ${current.buildingLabel}`
+                : "Sin unidad asignada"}
             </p>
           </div>
           <div className="p-2 rounded-3" style={{ border: "2px solid var(--color-border)" }}>
@@ -271,7 +273,10 @@ export const VisitsPage = () => {
 
           <div className="ct-card">
             <div className="ct-card-header">
-              <h3 className="ct-card-title">Historial de accesos — Unidad {current.unit}</h3>
+              <h3 className="ct-card-title">
+                Historial de accesos
+                {current.hasUnit ? ` — Unidad ${current.unit}` : ""}
+              </h3>
             </div>
             <div>
               {myAccess.map((log) => (

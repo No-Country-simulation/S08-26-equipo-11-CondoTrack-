@@ -22,6 +22,10 @@ export const MyMovesPage = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!current.hasUnit) {
+      setError("Necesitás una unidad asignada para solicitar una mudanza.");
+      return;
+    }
     const result = requestMove({
       buildingId: current.buildingId,
       unit: current.unit,
