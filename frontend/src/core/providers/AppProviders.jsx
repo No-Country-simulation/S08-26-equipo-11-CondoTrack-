@@ -7,7 +7,6 @@ import { UnitsProvider } from "@/modules/units/context/UnitsContext";
 import { AmenitiesProvider } from "@/modules/amenities/context/AmenitiesContext";
 import { ResidentsProvider } from "@/modules/residents/context/ResidentsContext";
 import { UsersProvider } from "@/modules/users/context/UsersContext";
-import { StaffProvider } from "@/modules/staff/context/StaffContext";
 import { AccessLogsProvider } from "@/modules/access/context/AccessLogsContext";
 import { DeliveriesProvider } from "@/modules/deliveries/context/DeliveriesContext";
 import { MovesProvider } from "@/modules/moves/context/MovesContext";
@@ -25,7 +24,6 @@ const PROVIDERS = [
   AmenitiesProvider,
   ResidentsProvider,
   UsersProvider,
-  StaffProvider,
   AccessLogsProvider,
   DeliveriesProvider,
   MovesProvider,
