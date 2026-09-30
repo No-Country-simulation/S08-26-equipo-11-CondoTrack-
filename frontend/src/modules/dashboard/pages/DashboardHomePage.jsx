@@ -6,7 +6,7 @@ import { useDeliveries } from "@/modules/deliveries/hooks/useDeliveries";
 import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 import { useResidents } from "@/modules/residents/hooks/useResidents";
-import { useStaff } from "@/modules/staff/context/StaffContext";
+import { useStaffByRole } from "@/modules/staff/hooks/useStaffByRole";
 import { useMoves } from "@/modules/moves/context/MovesContext";
 
 export const DashboardHomePage = () => {
@@ -25,7 +25,7 @@ export const DashboardHomePage = () => {
   const { forBuilding: deliveriesForBuilding } = useDeliveries();
   const { forBuilding: incidentsForBuilding } = useIncidents();
   const { forBuilding: maintenanceForBuilding } = useMaintenance();
-  const { forBuilding: staffForBuilding } = useStaff();
+  const { staff } = useStaffByRole(buildingId);
   const { forBuilding: movesForBuilding } = useMoves();
 
   const residents = residentsForBuilding(buildingId);
@@ -38,7 +38,6 @@ export const DashboardHomePage = () => {
   const openIncidents = buildingIncidents.filter((i) => i.status === "open");
   const maintenanceItems = maintenanceForBuilding(buildingId);
   const inProgressMaintenance = maintenanceItems.filter((m) => m.status !== "resolved");
-  const staff = staffForBuilding(buildingId);
   const moves = movesForBuilding(buildingId);
   const pendingMoves = moves.filter((m) => m.status === "pending");
 
@@ -52,7 +51,7 @@ export const DashboardHomePage = () => {
         <KpiCard label="Deliveries pendientes" value={pendingDeliveries.length} sub={`${pendingDeliveries.length - notified.length} sin notificar`} accent="var(--color-amber-light)" icon="deliveries" />
         <KpiCard label="Incidentes abiertos" value={openIncidents.length} sub={`${openIncidents.filter((i) => i.severity === "high").length} crítico(s)`} accent="var(--color-red-light)" icon="incidents" />
         <KpiCard label="Mudanzas pendientes" value={pendingMoves.length} sub={`${moves.length} totales`} accent="var(--color-purple-light)" icon="move" />
-        <KpiCard label="Personal registrado" value={staff.length} sub="Recepción y mantenimiento" accent="var(--color-accent-light)" icon="person" />
+        <KpiCard label="Personal registrado" value={staff.length} sub="Recepción, mantenimiento y administración" accent="var(--color-accent-light)" icon="person" />
       </div>
 
       <div className="ct-grid-main">

@@ -5,6 +5,8 @@ import { registerService } from "@/modules/auth/services/authService";
 import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { listUnits } from "@/modules/units/services/unitsService";
 import { linkResident } from "@/modules/residents/services/residentsService";
+import { useActivityLog } from "@/core/activity/ActivityLogContext";
+import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { apiErrorMessage } from "@/core/api/api";
 
 const EMPTY_FORM = {
@@ -22,6 +24,8 @@ const EMPTY_FORM = {
 
 export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) => {
   const { buildings, loading: buildingsLoading } = useBuildings();
+  const { logActivity } = useActivityLog();
+  const actor = useActorLabel();
   const emptyForm = () => ({
     ...EMPTY_FORM,
     buildingId: defaultBuildingId ?? "",
@@ -131,6 +135,11 @@ export const CreateUserModal = ({ show, onHide, onCreated, defaultBuildingId }) 
       setForm(emptyForm());
       setUnits([]);
       setFieldErrors({});
+      logActivity({
+        actor,
+        action: `Registró al usuario "${createdEmail}"`,
+        buildingId: form.buildingId,
+      });
       onCreated?.(message, { buildingId: form.buildingId });
       handleClose();
     } catch (err) {
