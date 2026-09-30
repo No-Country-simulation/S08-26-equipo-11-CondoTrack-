@@ -22,11 +22,18 @@ export const useIncidents = () => {
     (i) => i.status === "resolved" || i.status === "RESOLVED",
   );
 
+  // Los KPIs y badges son por edificio, no globales.
+  const openForBuilding = (buildingId) =>
+    forBuilding(buildingId).filter(
+      (i) => i.status === "open" || i.status === "OPEN",
+    );
+
   return {
     items,
     open,
     inProgress,
     resolved,
+    openForBuilding,
     forResident,
     forUnit,
     forBuilding,
