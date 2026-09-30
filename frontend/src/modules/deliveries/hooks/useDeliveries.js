@@ -3,6 +3,8 @@ import { useDeliveriesStore } from "@/modules/deliveries/context/DeliveriesConte
 export const useDeliveries = () => {
   const {
     deliveries,
+    mine,
+    refreshMine,
     forUnit,
     forBuilding,
     notifyResident,
@@ -26,6 +28,8 @@ export const useDeliveries = () => {
 
   return {
     deliveries,
+    mine,
+    refreshMine,
     pending,
     notified,
     delivered,

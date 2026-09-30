@@ -4,7 +4,6 @@ import { ActivityLogProvider } from "@/core/activity/ActivityLogContext";
 import { NotificationsProvider } from "@/modules/notifications/context/NotificationsContext";
 import { BuildingsProvider } from "@/modules/buildings/context/BuildingsContext";
 import { UnitsProvider } from "@/modules/units/context/UnitsContext";
-import { AmenitiesProvider } from "@/modules/amenities/context/AmenitiesContext";
 import { ResidentsProvider } from "@/modules/residents/context/ResidentsContext";
 import { UsersProvider } from "@/modules/users/context/UsersContext";
 import { AccessLogsProvider } from "@/modules/access/context/AccessLogsContext";
@@ -21,7 +20,6 @@ const PROVIDERS = [
   NotificationsProvider,
   BuildingsProvider,
   UnitsProvider,
-  AmenitiesProvider,
   ResidentsProvider,
   UsersProvider,
   AccessLogsProvider,

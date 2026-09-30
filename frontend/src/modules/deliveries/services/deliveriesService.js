@@ -41,14 +41,20 @@ const normalizeDelivery = (raw = {}) => {
   return {
     id: raw.id,
     buildingId: raw.buildingId,
-    unitId: raw.unitId,
-    recipientPersonId: raw.recipientPersonId ?? null,
+    // El listado proyecta unit{code,floor} anidado y sin unitId suelto: sin
+    // derivarlo de acá, la UI no tenía con qué cruzar el nombre del
+    // destinatario contra /units/:id/residents y mostraba "Destinatario".
+    unitId: unit?.id ?? raw.unitId ?? null,
+    recipientPersonId: raw.recipientPersonId ?? recipient?.id ?? null,
     // El listado proyecta recipient{firstName,lastName} y unit{code,floor}.
     // Si vinieran solo los ids (create), quedan vacíos y la UI los resuelve
-    // contra /units/:id/residents.
-    resident: [recipient?.firstName, recipient?.lastName]
-      .filter(Boolean)
-      .join(" "),
+    // contra /units/:id/residents. Con || porque join devuelve "" y no
+    // dejaría caer al caso siguiente con ??.
+    resident:
+      recipient?.fullName ||
+      [recipient?.firstName, recipient?.lastName].filter(Boolean).join(" ") ||
+      raw.recipientName ||
+      "",
     unit: unit?.code ?? "",
     unitFloor: unit?.floor ?? null,
     receivedByUserId: raw.receivedByUserId ?? null,

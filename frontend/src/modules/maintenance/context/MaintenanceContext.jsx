@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from "react";
 import PropTypes from "prop-types";
-import { MAINTENANCE } from "@/modules/maintenance/data/maintenance.data";
 import { useActivityLog } from "@/core/activity/ActivityLogContext";
 import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
@@ -14,7 +13,9 @@ const STATUS_LABELS = {
 };
 
 export function MaintenanceProvider({ children }) {
-  const [items, setItems] = useState(MAINTENANCE);
+  // Sin endpoint de mantenimiento: la lista arranca vacía en vez de sembrar
+  // órdenes ficticias. Lo que el usuario ve es solo lo que creó en la sesión.
+  const [items, setItems] = useState([]);
   const { logActivity } = useActivityLog();
   const actor = useActorLabel();
   const { notify } = useNotificationsStore();

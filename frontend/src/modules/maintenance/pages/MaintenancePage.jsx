@@ -20,7 +20,12 @@ export const MaintenancePage = () => {
         <KpiCard label="Resueltos (mes)" value={resolved.length} />
       </div>
       <div className="d-flex flex-column gap-3">
-        {items.map((item) => (
+        {items.length === 0 ? (
+          <div className="text-center py-5 ct-text-muted">
+            Sin órdenes de mantenimiento en este edificio.
+          </div>
+        ) : (
+          items.map((item) => (
           <div key={item.id} className="ct-card ct-card-hoverable p-3 d-flex align-items-start gap-3">
             <span className={`ct-priority-dot ${item.priority}`} />
             <div className="flex-grow-1 min-w-0">
@@ -51,7 +56,8 @@ export const MaintenancePage = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
