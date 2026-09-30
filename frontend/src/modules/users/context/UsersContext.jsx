@@ -63,6 +63,17 @@ export function UsersProvider({ children }) {
   const canManageUsers = ["ADMIN", "SUPER_ADMIN"].includes(user?.role);
 
   /**
+   * El backend exige `buildingId` a los ADMIN y responde 400 sin él
+   * ("El identificador del edificio es obligatorio"). Un ADMIN que todavía no
+   * eligió edificio no es un error: es una pantalla a la espera de una
+   * selección, así que se saltea la petición en vez de mostrar una alerta roja
+   * por algo que el usuario todavía no tenía forma de completar.
+   * SUPER_ADMIN sí puede listar sin edificio y sigue consultando.
+   */
+  const isAdminWithoutBuilding =
+    user?.role === "ADMIN" && !query.buildingId;
+
+  /**
    * Carga la lista de usuarios.
    */
   const refreshUsers = useCallback(
@@ -74,6 +85,15 @@ export function UsersProvider({ children }) {
         page: query.page,
         ...overrides,
       };
+
+      if (isAdminWithoutBuilding) {
+        setUsers([]);
+        setTotal(0);
+        setTotalPages(1);
+        setLoading(false);
+        setError("");
+        return [];
+      }
 
       setLoading(true);
       setError("");
@@ -130,7 +150,7 @@ export function UsersProvider({ children }) {
         setLoading(false);
       }
     },
-    [query],
+    [query, isAdminWithoutBuilding],
   );
 
   /**
