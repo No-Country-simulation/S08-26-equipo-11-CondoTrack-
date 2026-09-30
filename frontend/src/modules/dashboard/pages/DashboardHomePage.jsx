@@ -87,8 +87,8 @@ export const DashboardHomePage = () => {
             <div>
               {pendingDeliveries.map((delivery) => (
                 <div key={delivery.id} className="ct-row ct-row-hover">
-                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.resident}</p>
-                  <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>{delivery.carrier} · {delivery.received}</p>
+                  <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.carrier}</p>
+                  <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>{delivery.trackingNumber || delivery.resident || "Sin seguimiento"}</p>
                 </div>
               ))}
             </div>

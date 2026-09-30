@@ -54,3 +54,24 @@ export const createBuilding = async ({
   });
   return normalizeBuilding(unwrapObject(response));
 };
+
+// PATCH /api/buildings/:id -solo SUPER_ADMIN.
+// Actualización parcial: solo se envían las claves presentes. El backend
+// acepta únicamente { name?, address?, numberOfFloors? (entero >= 0),
+// numberOfUnits? (entero >= 0), isActive? } y exige al menos un campo.
+// OJO: no acepta city/state/zipCode/description (400 si se envían).
+export const updateBuilding = async (id, patch = {}) => {
+  const payload = {};
+  if (patch.name !== undefined) payload.name = patch.name?.trim();
+  if (patch.address !== undefined) payload.address = patch.address?.trim();
+  if (patch.floors !== undefined) payload.numberOfFloors = Number(patch.floors);
+  if (patch.units !== undefined) payload.numberOfUnits = Number(patch.units);
+  if (patch.numberOfFloors !== undefined)
+    payload.numberOfFloors = Number(patch.numberOfFloors);
+  if (patch.numberOfUnits !== undefined)
+    payload.numberOfUnits = Number(patch.numberOfUnits);
+  if (patch.isActive !== undefined) payload.isActive = Boolean(patch.isActive);
+
+  const response = await httpClient.patch(`/buildings/${id}`, payload);
+  return normalizeBuilding(unwrapObject(response));
+};
