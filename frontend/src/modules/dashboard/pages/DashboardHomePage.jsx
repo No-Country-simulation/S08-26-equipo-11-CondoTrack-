@@ -32,24 +32,41 @@ export const DashboardHomePage = () => {
   const logs = accessForBuilding(buildingId);
   const deniedCount = logs.filter((l) => l.status === "denied").length;
   const buildingDeliveries = deliveriesForBuilding(buildingId);
-  const pendingDeliveries = buildingDeliveries.filter((d) => d.status === "pending");
-  const notified = buildingDeliveries.filter((d) => d.status === "notified");
+  // El backend devuelve los enums en mayúsculas (RECEIVED, OPEN, HIGH...).
+  // Aceptar ambas variantes evita que el filtro quede siempre vacío.
+  const pendingDeliveries = buildingDeliveries.filter(
+    (d) => d.status === "pending" || d.status === "RECEIVED",
+  );
+  const notified = buildingDeliveries.filter(
+    (d) => d.status === "notified" || d.status === "NOTIFIED",
+  );
   const buildingIncidents = incidentsForBuilding(buildingId);
-  const openIncidents = buildingIncidents.filter((i) => i.status === "open");
+  const openIncidents = buildingIncidents.filter(
+    (i) => i.status === "open" || i.status === "OPEN",
+  );
+  const criticalIncidents = openIncidents.filter(
+    (i) => i.severity === "high" || i.severity === "HIGH" || i.severity === "CRITICAL",
+  );
   const maintenanceItems = maintenanceForBuilding(buildingId);
   const inProgressMaintenance = maintenanceItems.filter((m) => m.status !== "resolved");
   const moves = movesForBuilding(buildingId);
   const pendingMoves = moves.filter((m) => m.status === "pending");
+
+  // El vínculo al resident es lo que define si sigue vigente: `status` viene
+  // hardcodeado en "active" desde el service, así que no sirve para contar.
+  const activeResidents = residents.filter(
+    (r) => !r.endDate || new Date(r.endDate) >= new Date(),
+  );
 
   return (
     <div className="ct-main-scroll">
       <p className="ct-font-mono ct-text-muted mb-4 text-capitalize" style={{ fontSize: "0.75rem" }}>{today}</p>
 
       <div className="ct-grid-kpi mb-4">
-        <KpiCard label="Residentes activos" value={residents.filter((r) => r.status === "active").length} sub={`${residents.length} totales`} accent="var(--color-accent-light)" icon="residents" />
+        <KpiCard label="Residentes activos" value={activeResidents.length} sub={`${residents.length} totales`} accent="var(--color-accent-light)" icon="residents" />
         <KpiCard label="Ingresos hoy" value={logs.filter((l) => l.direction === "Ingreso").length} sub={`${deniedCount} denegados`} accent="var(--color-green-light)" icon="access" />
         <KpiCard label="Deliveries pendientes" value={pendingDeliveries.length} sub={`${pendingDeliveries.length - notified.length} sin notificar`} accent="var(--color-amber-light)" icon="deliveries" />
-        <KpiCard label="Incidentes abiertos" value={openIncidents.length} sub={`${openIncidents.filter((i) => i.severity === "high").length} crítico(s)`} accent="var(--color-red-light)" icon="incidents" />
+        <KpiCard label="Incidentes abiertos" value={openIncidents.length} sub={`${criticalIncidents.length} crítico(s)`} accent="var(--color-red-light)" icon="incidents" />
         <KpiCard label="Mudanzas pendientes" value={pendingMoves.length} sub={`${moves.length} totales`} accent="var(--color-purple-light)" icon="move" />
         <KpiCard label="Personal registrado" value={staff.length} sub="Recepción, mantenimiento y administración" accent="var(--color-accent-light)" icon="person" />
       </div>
