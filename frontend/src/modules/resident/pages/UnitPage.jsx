@@ -25,7 +25,8 @@ const formatSince = (value) => {
 // reglamento interno, y ninguno de esos datos existe en la API.
 export const UnitPage = () => {
   const current = useCurrentResident();
-  const { staff, isLoading: staffLoading } = useStaffByRole(current.buildingId);
+  const { staff, isLoading: staffLoading, error: staffError } =
+    useStaffByRole(current.buildingId);
   const [unit, setUnit] = useState(null);
   const [residents, setResidents] = useState([]);
   const [areas, setAreas] = useState([]);
@@ -266,6 +267,14 @@ export const UnitPage = () => {
             <div>
               {staffLoading ? (
                 <p className="ct-text-muted mb-0 p-3">Cargando personal...</p>
+              ) : staffError ? (
+                // No se dice "no hay personal": el endpoint de usuarios es de
+                // administración y un RESIDENT recibe 403. Lo que sabemos es
+                // que no se pudo consultar, no que la lista esté vacía.
+                <p className="ct-text-muted mb-0 p-3">
+                  El personal del edificio no se puede consultar desde tu
+                  perfil. Necesitás hablar con la administración.
+                </p>
               ) : staff.length === 0 ? (
                 <p className="ct-text-muted mb-0 p-3">
                   Este edificio no tiene personal asignado.
