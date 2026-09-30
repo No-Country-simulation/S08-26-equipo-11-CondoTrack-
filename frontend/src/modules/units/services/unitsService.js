@@ -67,3 +67,19 @@ export const getUnitDetail = async (unitId) => {
     unitPeople: Array.isArray(raw.unitPeople) ? raw.unitPeople : [],
   };
 };
+
+// PATCH /api/units/:unitId — solo SUPER_ADMIN o ADMIN del edificio.
+// Parcial: { code?, floor? (entero >= 0), unitType?, description?, isActive? }.
+// Exige al menos un campo. 409 si el código ya existe en el edificio.
+export const updateUnit = async (unitId, patch = {}) => {
+  const payload = {};
+  if (patch.code !== undefined) payload.code = patch.code?.trim();
+  if (patch.floor !== undefined) payload.floor = Number(patch.floor);
+  if (patch.unitType !== undefined) payload.unitType = patch.unitType?.trim();
+  if (patch.description !== undefined)
+    payload.description = patch.description?.trim() ?? null;
+  if (patch.isActive !== undefined) payload.isActive = Boolean(patch.isActive);
+
+  const response = await httpClient.patch(`/units/${unitId}`, payload);
+  return normalizeUnit(unwrapObject(response));
+};
