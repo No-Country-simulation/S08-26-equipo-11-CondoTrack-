@@ -584,5 +584,80 @@
  *               schema:
  *                 $ref: '#/components/schemas/ErrorResponse'
  */
+/**
+ * @openapi
+ * paths:
+ *   /api/units/{unitId}:
+ *     patch:
+ *       tags:
+ *         - Units
+ *       summary: Actualizar una unidad
+ *       description: >
+ *         Puede actualizarla un ADMIN asignado al edificio de la unidad
+ *         o un SUPER_ADMIN. El código debe ser único dentro del edificio.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: unitId
+ *           required: true
+ *           description: ID de la unidad
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: false
+ *               properties:
+ *                 code:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 20
+ *                 floor:
+ *                   type: integer
+ *                   minimum: 0
+ *                 unitType:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 50
+ *                 description:
+ *                   type: string
+ *                   nullable: true
+ *                 isActive:
+ *                   type: boolean
+ *             example:
+ *               code: 4B
+ *               floor: 4
+ *               unitType: DEPARTAMENTO
+ *               description: Departamento de dos ambientes
+ *               isActive: true
+ *       responses:
+ *         '200':
+ *           description: Unidad actualizada correctamente
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     $ref: '#/components/schemas/Unit'
+ *         '400':
+ *           description: ID o datos inválidos
+ *         '401':
+ *           description: JWT ausente o inválido
+ *         '403':
+ *           description: Sin permisos sobre el edificio de la unidad
+ *         '404':
+ *           description: Unidad no encontrada
+ *         '409':
+ *           description: Ya existe otra unidad con ese código en el edificio
+ */
 
 export {};

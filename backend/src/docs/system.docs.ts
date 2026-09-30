@@ -1,28 +1,6 @@
 /**
  * @openapi
  * paths:
- *   /:
- *     get:
- *       tags:
- *       - Sistema
- *       summary: Mensaje de bienvenida
- *       description: Endpoint raíz que confirma que la API está corriendo.
- *       responses:
- *         '200':
- *           description: La API está funcionando
- *           content:
- *             application/json:
- *               schema:
- *                 type: object
- *                 properties:
- *                   message:
- *                     type: string
- *                     example: CondoTrack API funcionando
- */
-
-/**
- * @openapi
- * paths:
  *   /health:
  *     get:
  *       tags:
@@ -50,20 +28,6 @@
  *                 status: error
  *                 services:
  *                   database: disconnected
- */
-
-/**
- * @openapi
- * paths:
- *   /api-docs:
- *     get:
- *       tags:
- *       - Sistema
- *       summary: UI de Swagger
- *       description: Sirve la documentación interactiva de la API mediante Swagger UI.
- *       responses:
- *         '200':
- *           description: HTML de Swagger UI
  */
 
 export {};

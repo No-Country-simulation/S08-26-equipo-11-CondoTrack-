@@ -10,13 +10,14 @@ router.get(
   "/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
+    session: false,
   }),
 );
 
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    session: false,
+    session: false, // cuidado
   }),
   googleCallback,
 );

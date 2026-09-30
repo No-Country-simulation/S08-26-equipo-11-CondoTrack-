@@ -7,6 +7,7 @@ import AppError from "../../../utils/AppError.js";
 import catchAsync from "../../../utils/catchAsync.js";
 import { Unit } from "../../units/unit.model.js";
 import { UnitPeople } from "../../unit-people/unit-people.model.js";
+import { Person } from "../../people/people.model.js";
 
 export const getMe: RequestHandler = catchAsync(async (req, res) => {
   const authenticatedUser = req.authenticatedUser;
@@ -17,6 +18,21 @@ export const getMe: RequestHandler = catchAsync(async (req, res) => {
 
   const user = await User.findByPk(authenticatedUser.id, {
     attributes: ["id", "email", "status", "personId"],
+    include: [
+      {
+        model: Person,
+        as: "person",
+        attributes: [
+          "id",
+          "firstName",
+          "lastName",
+          "documentType",
+          "documentNumber",
+          "email",
+          "phone",
+        ],
+      },
+    ],
   });
 
   if (!user) {
@@ -75,17 +91,43 @@ export const getMe: RequestHandler = catchAsync(async (req, res) => {
       : [];
   });
 
+  const person = user.person ?? null;
+
+  const profileComplete =
+    !!person?.firstName &&
+    !!person?.lastName &&
+    !!person?.documentType &&
+    !!person?.documentNumber &&
+    !!person?.phone;
+
   res.status(200).json({
     success: true,
     data: {
       id: user.id,
       email: user.email,
       status: user.status,
+
+      profile: person
+        ? {
+            id: person.id,
+            firstName: person.firstName,
+            lastName: person.lastName,
+            documentType: person.documentType,
+            documentNumber: person.documentNumber,
+            email: person.email,
+            phone: person.phone,
+          }
+        : null,
+
+      profileComplete,
+
       roles: authenticatedUser.roles,
+
       buildings: buildings.map((building) => ({
         id: building.id,
         name: building.name,
       })),
+
       units,
     },
   });

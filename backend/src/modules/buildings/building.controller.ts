@@ -5,6 +5,9 @@ import { resolveBuildingScope } from "../../middlewares/auth.middleware.js";
 import { validateCreateBuildingDto } from "./create-building.dto.js";
 import { validateListBuildingsDto } from "./list-buildings.dto.js";
 import { BuildingService } from "./building.service.js";
+import AppError from "../../utils/AppError.js";
+import { isUuid } from "../../utils/uuid.js";
+import { validateUpdateBuildingDto } from "./update-building.dto.js";
 
 export class BuildingController {
   constructor(private readonly buildingService: BuildingService) {}
@@ -22,7 +25,6 @@ export class BuildingController {
 
   list: RequestHandler = catchAsync(async (req, res) => {
     const filters = validateListBuildingsDto(req.query);
-    //un ADMIN solo ve los edificios que tiene asignados; SUPER_ADMIN ve todos
     const buildingIds = resolveBuildingScope(req.authenticatedUser!);
     const buildings = await this.buildingService.list(
       filters.includeInactive,
@@ -37,10 +39,31 @@ export class BuildingController {
 
   getById: RequestHandler = catchAsync(async (req, res) => {
     const idParam = req.params.id;
-    // express 5 llora si no lo pongo asi
     const id = Array.isArray(idParam) ? idParam[0] : idParam;
 
     const building = await this.buildingService.getById(id);
+
+    res.status(200).json({
+      success: true,
+      data: building,
+    });
+  });
+
+  update: RequestHandler = catchAsync(async (req, res) => {
+    const rawId = req.params.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!id || !isUuid(id)) {
+      throw new AppError(
+        "El identificador del edificio debe ser un UUID válido",
+        400,
+      );
+    }
+
+    const building = await this.buildingService.update(
+      id,
+      validateUpdateBuildingDto(req.body),
+    );
 
     res.status(200).json({
       success: true,
