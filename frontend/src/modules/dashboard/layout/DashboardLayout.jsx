@@ -59,6 +59,10 @@ const pageMetaFor = (pathname, building, buildingsCount, residentsCount) => {
       title: "Actividad",
       subtitle: "Historial de acciones de todos los edificios",
     },
+    "/dashboard/perfil": {
+      title: "Mi perfil",
+      subtitle: "Tus datos, rol y asignaciones",
+    },
   };
   return meta[pathname] || { title: "Dashboard", subtitle: building.name };
 };
