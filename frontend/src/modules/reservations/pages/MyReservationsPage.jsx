@@ -10,6 +10,19 @@ import { listCommonAreas } from "@/modules/amenities/services/commonAreasService
 import { bookReservation } from "@/modules/reservations/services/reservationsService";
 import { apiErrorMessage } from "@/core/api/api";
 
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+};
+
 const toIsoWithOffset = (date, time) => {
   if (!date || !time) return null;
   const parsed = new Date(`${date}T${time}:00`);
@@ -20,18 +33,19 @@ const toIsoWithOffset = (date, time) => {
 export const MyReservationsPage = () => {
   const { user } = useAuth();
   const current = useCurrentResident();
-  const { spaces, forUnit } = useReservations();
+  const { forMine, refreshMine, loadingMine } = useReservations();
   const { selectedSpace, selectSpace, form, updateField, booked, book, reset } =
     useReservationBooking();
   const [areas, setAreas] = useState([]);
   const [bookingError, setBookingError] = useState("");
   const [bookingSaving, setBookingSaving] = useState(false);
 
-  const myReservations = forUnit(current.unit);
+  const myReservations = forMine();
   const myUnitId = user?.units?.[0]?.id ?? null;
 
   // Espacios reales del edificio (el backend los expone al RESIDENT).
-  // Si falla o viene vacío, se usan los estáticos de referencia.
+  // Antes caía a una lista estática de referencia; ahora solo muestra áreas
+  // comunes reales y avisa cuando el edificio todavía no tiene ninguna.
   useEffect(() => {
     if (!current.buildingId) {
       return undefined;
@@ -40,10 +54,10 @@ export const MyReservationsPage = () => {
     let cancelled = false;
     listCommonAreas(current.buildingId)
       .then((items) => {
-        if (!cancelled && items.length > 0) setAreas(items);
+        if (!cancelled) setAreas(items);
       })
       .catch(() => {
-        // ignore: se usan los espacios estáticos
+        if (!cancelled) setAreas([]);
       });
 
     return () => {
@@ -51,10 +65,11 @@ export const MyReservationsPage = () => {
     };
   }, [current.buildingId]);
 
-  const spaceOptions =
-    areas.length > 0
-      ? areas.map((area) => ({ name: area.name, cap: area.capacity, id: area.id }))
-      : spaces;
+  const spaceOptions = areas.map((area) => ({
+    name: area.name,
+    cap: area.capacity,
+    id: area.id,
+  }));
 
   const handleBook = async () => {
     setBookingError("");
@@ -87,6 +102,8 @@ export const MyReservationsPage = () => {
         notes: form.notes,
       });
       book();
+      // La reserva recién creada debe verse en "Mis reservas" sin recargar.
+      await refreshMine();
     } catch (err) {
       setBookingError(
         apiErrorMessage(err, "No se pudo enviar la reserva."),
@@ -107,24 +124,30 @@ export const MyReservationsPage = () => {
               </p>
             </div>
             <div>
-              {spaceOptions.map((space) => (
-                <button
-                  key={space.name}
-                  type="button"
-                  className="ct-row ct-row-hover d-flex align-items-center justify-content-between w-100 border-0 bg-transparent text-start"
-                  style={{
-                    background: selectedSpace === space.name ? "var(--color-accent-light)" : undefined,
-                    borderLeft: selectedSpace === space.name ? "3px solid var(--color-accent)" : "3px solid transparent",
-                  }}
-                  onClick={() => selectSpace(space.name)}
-                >
-                  <div>
-                    <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{space.name}</p>
-                    <p className="ct-font-mono ct-text-muted mb-0 mt-1" style={{ fontSize: "0.6875rem" }}>Capacidad: {space.cap ?? "—"} personas</p>
-                  </div>
-                  <Icon name="chevron" size={14} className="ct-text-faint" />
-                </button>
-              ))}
+              {spaceOptions.length === 0 ? (
+                <p className="ct-text-muted px-3 py-3 mb-0">
+                  Este edificio todavía no tiene espacios comunes cargados.
+                </p>
+              ) : (
+                spaceOptions.map((space) => (
+                  <button
+                    key={space.id}
+                    type="button"
+                    className="ct-row ct-row-hover d-flex align-items-center justify-content-between w-100 border-0 bg-transparent text-start"
+                    style={{
+                      background: selectedSpace === space.name ? "var(--color-accent-light)" : undefined,
+                      borderLeft: selectedSpace === space.name ? "3px solid var(--color-accent)" : "3px solid transparent",
+                    }}
+                    onClick={() => selectSpace(space.name)}
+                  >
+                    <div>
+                      <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{space.name}</p>
+                      <p className="ct-font-mono ct-text-muted mb-0 mt-1" style={{ fontSize: "0.6875rem" }}>Capacidad: {space.cap ?? "—"} personas</p>
+                    </div>
+                    <Icon name="chevron" size={14} className="ct-text-faint" />
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -197,10 +220,9 @@ export const MyReservationsPage = () => {
             <div className="ct-card-header">
               <h3 className="ct-card-title" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Mis reservas</h3>
             </div>
-            {/* TODO(api): el backend aún no expone las reservas propias del
-                residente (el listado es solo ADMIN). Cuando exista el endpoint,
-                reemplazar forUnit por la llamada real. */}
-            {myReservations.length === 0 ? (
+            {loadingMine ? (
+              <div className="text-center py-4 ct-text-muted">Cargando reservas...</div>
+            ) : myReservations.length === 0 ? (
               <div className="text-center py-4 ct-text-muted">Sin reservas activas</div>
             ) : (
               <div>
@@ -210,8 +232,14 @@ export const MyReservationsPage = () => {
                       <Icon name="reservations" size={15} style={{ color: "var(--color-accent)" }} />
                     </div>
                     <div className="flex-grow-1 min-w-0">
-                      <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{reservation.space}</p>
-                      <p className="ct-font-mono ct-text-muted mb-0 mt-1" style={{ fontSize: "0.75rem" }}>{reservation.date} · {reservation.time}</p>
+                      <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{reservation.space || "Espacio"}</p>
+                      <p className="ct-font-mono ct-text-muted mb-0 mt-1" style={{ fontSize: "0.75rem" }}>
+                        {formatDateTime(reservation.startAt)} → {formatDateTime(reservation.endAt)}
+                      </p>
+                      <p className="ct-font-mono ct-text-faint mb-0 mt-1" style={{ fontSize: "0.6875rem" }}>
+                        Unidad {reservation.unit || "—"}
+                        {reservation.notes ? ` · ${reservation.notes}` : ""}
+                      </p>
                     </div>
                     <StatusBadge status={reservation.status} />
                   </div>

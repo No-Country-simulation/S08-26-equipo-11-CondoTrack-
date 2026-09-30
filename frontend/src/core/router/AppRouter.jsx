@@ -155,6 +155,12 @@ const DashboardHomePage = lazy(() =>
   })),
 );
 
+const ProfilePage = lazy(() =>
+  import("@/modules/profile/pages/ProfilePage").then((m) => ({
+    default: m.ProfilePage,
+  })),
+);
+
 const RoleSelectorPage = lazy(() =>
   import("@/modules/home/pages/RoleSelectorPage").then((m) => ({
     default: m.RoleSelectorPage,
@@ -241,6 +247,7 @@ export default function AppRouter() {
             <Route path="incidentes" element={<IncidentsPage />} />
             <Route path="comunicaciones" element={<CommunicationsPage />} />
             <Route path="edificios" element={<BuildingsPage />} />
+            <Route path="perfil" element={<ProfilePage />} />
             <Route
               path="edificios/:buildingId"
               element={<BuildingDetailPage />}
@@ -267,6 +274,7 @@ export default function AppRouter() {
             <Route path="mudanzas" element={<MyMovesPage />} />
             <Route path="solicitudes" element={<RequestsPage />} />
             <Route path="unidad" element={<UnitPage />} />
+            <Route path="perfil" element={<ProfilePage />} />
           </Route>
 
           <Route
@@ -285,6 +293,7 @@ export default function AppRouter() {
           >
             <Route index element={<AccessPage />} />
             <Route path="deliveries" element={<DeliveriesPage />} />
+            <Route path="perfil" element={<ProfilePage />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/login" replace />} />

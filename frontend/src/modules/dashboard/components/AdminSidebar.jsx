@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { to: "/dashboard/incidentes", label: "Incidentes", icon: "incidents", badge: 2 },
   { to: "/dashboard/comunicaciones", label: "Comunicaciones", icon: "notification" },
   { to: "/dashboard/actividad", label: "Actividad", icon: "clock" },
+  { to: "/dashboard/perfil", label: "Mi perfil", icon: "person" },
 ];
 
 export const AdminSidebar = ({ selectedBuildingId, onBuildingChange }) => {

@@ -1,13 +1,29 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Icon } from "@/shared/components/Icon";
+import { useAuth } from "@/modules/auth/contexts/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/recepcion", end: true, label: "Accesos", icon: "access" },
   { to: "/recepcion/deliveries", label: "Deliveries", icon: "deliveries" },
+  { to: "/recepcion/perfil", label: "Mi perfil", icon: "person" },
 ];
 
 export const ReceptionSidebar = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const displayName =
+    `${user?.nombre ?? ""} ${user?.apellido ?? ""}`.trim() ||
+    user?.email ||
+    "Recepción / Portería";
+  const initials =
+    `${user?.nombre?.[0] ?? ""}${user?.apellido?.[0] ?? ""}`.toUpperCase() ||
+    (user?.email?.[0] ?? "R").toUpperCase();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <aside className="ct-sidebar">
@@ -19,8 +35,33 @@ export const ReceptionSidebar = () => {
       </div>
 
       <div className="p-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-        <p className="ct-sidebar-label mb-0">Perfil</p>
-        <p className="text-white mb-0 mt-1" style={{ fontSize: "0.875rem", fontWeight: 500 }}>Recepción / Portería</p>
+        <div className="d-flex align-items-center gap-3">
+          <div
+            className="ct-avatar"
+            style={{
+              width: 40,
+              height: 40,
+              fontSize: "0.875rem",
+              background: "var(--color-amber)",
+            }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-white mb-0 text-truncate"
+              style={{ fontSize: "0.875rem", fontWeight: 500 }}
+            >
+              {displayName}
+            </p>
+            <p
+              className="mb-0 text-truncate"
+              style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.4)" }}
+            >
+              Recepción / Portería
+            </p>
+          </div>
+        </div>
       </div>
 
       <nav className="ct-sidebar-nav">
@@ -40,12 +81,19 @@ export const ReceptionSidebar = () => {
       <div className="ct-sidebar-footer">
         <button
           type="button"
-          className="btn btn-link p-0 d-flex align-items-center gap-2 ct-font-mono"
-          style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", textDecoration: "none" }}
+          className="ct-sidebar-link"
           onClick={() => navigate("/inicio")}
         >
-          <Icon name="logout" size={13} />
+          <Icon name="dashboard" size={15} />
           Cambiar perfil
+        </button>
+        <button
+          type="button"
+          className="ct-sidebar-link mt-2"
+          onClick={handleLogout}
+        >
+          <Icon name="logout" size={15} />
+          Cerrar sesión
         </button>
       </div>
     </aside>

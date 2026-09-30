@@ -34,30 +34,50 @@ const UI_STATUS = {
   PICKED_UP: "delivered",
 };
 
-const normalizeDelivery = (raw = {}) => ({
-  id: raw.id,
-  buildingId: raw.buildingId,
-  unitId: raw.unitId,
-  recipientPersonId: raw.recipientPersonId ?? null,
-  // BRECHA: el backend no trae nombre del destinatario (solo personId).
-  // Al cablear la UI se resuelve contra residentes (match por personId).
-  resident: "",
-  receivedByUserId: raw.receivedByUserId ?? null,
-  pickedUpByUserId: raw.pickedUpByUserId ?? null,
-  carrier: raw.carrier ?? "",
-  trackingNumber: raw.trackingNumber ?? "",
-  description: "",
-  received: raw.receivedAt ?? raw.createdAt ?? null,
-  status: raw.status ?? "",
-  uiStatus: UI_STATUS[raw.status] ?? raw.status ?? "",
-  notifiedAt: raw.notifiedAt ?? null,
-  pickedUpAt: raw.pickedUpAt ?? null,
-  createdAt: raw.createdAt ?? null,
-  updatedAt: raw.updatedAt ?? null,
-});
+const normalizeDelivery = (raw = {}) => {
+  const recipient = raw.recipient ?? null;
+  const unit = raw.unit ?? null;
+
+  return {
+    id: raw.id,
+    buildingId: raw.buildingId,
+    unitId: raw.unitId,
+    recipientPersonId: raw.recipientPersonId ?? null,
+    // El listado proyecta recipient{firstName,lastName} y unit{code,floor}.
+    // Si vinieran solo los ids (create), quedan vacíos y la UI los resuelve
+    // contra /units/:id/residents.
+    resident: [recipient?.firstName, recipient?.lastName]
+      .filter(Boolean)
+      .join(" "),
+    unit: unit?.code ?? "",
+    unitFloor: unit?.floor ?? null,
+    receivedByUserId: raw.receivedByUserId ?? null,
+    pickedUpByUserId: raw.pickedUpByUserId ?? null,
+    carrier: raw.carrier ?? "",
+    trackingNumber: raw.trackingNumber ?? "",
+    description: "",
+    received: raw.receivedAt ?? raw.createdAt ?? null,
+    status: raw.status ?? "",
+    uiStatus: UI_STATUS[raw.status] ?? raw.status ?? "",
+    notifiedAt: raw.notifiedAt ?? null,
+    pickedUpAt: raw.pickedUpAt ?? null,
+    createdAt: raw.createdAt ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  };
+};
 
 export const listBuildingDeliveries = async (buildingId, { status } = {}) => {
   const response = await httpClient.get(`/buildings/${buildingId}/deliveries`, {
+    params: status ? { status } : {},
+  });
+  return unwrapList(response).map(normalizeDelivery);
+};
+
+// GET /api/deliveries/mine[?status=] — deliveries de las unidades del
+// residente autenticado (el backend resuelve sus UnitPeople vigentes).
+// Exige rol RESIDENT (403 si no). Sin paginado: devuelve el array.
+export const listMyDeliveries = async ({ status } = {}) => {
+  const response = await httpClient.get("/deliveries/mine", {
     params: status ? { status } : {},
   });
   return unwrapList(response).map(normalizeDelivery);

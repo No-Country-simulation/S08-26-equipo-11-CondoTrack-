@@ -45,7 +45,7 @@ export const BuildingDetailPage = () => {
   const { forBuilding: staffForBuilding } = useStaff();
   const { forBuilding: accessForBuilding } = useAccessLogs();
   const { forBuilding: deliveriesForBuilding } = useDeliveries();
-  const { forBuilding: reservationsForBuilding } = useReservations();
+  const { forBuilding: reservationsForBuilding, fetchBuilding: fetchReservations } = useReservations();
   const { forBuilding: movesForBuilding } = useMoves();
   const { forBuilding: incidentsForBuilding } = useIncidents();
   const { forBuilding: maintenanceForBuilding } = useMaintenance();
@@ -64,6 +64,12 @@ export const BuildingDetailPage = () => {
   useEffect(() => {
     fetchUnits(id);
   }, [id, fetchUnits]);
+
+  // Las reservas del detalle son reales (antes venían del mock estático y
+  // nunca coincidían con lo que el residente había reservado).
+  useEffect(() => {
+    fetchReservations(id);
+  }, [id, fetchReservations]);
 
   // Amenidades reales del edificio (el mock no tiene nada para UUID).
   useEffect(() => {

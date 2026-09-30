@@ -15,6 +15,7 @@ export const ResidentLayout = () => {
     "/portal/mudanzas": { title: "Mudanzas", subtitle: "Solicitá y seguí tus mudanzas" },
     "/portal/solicitudes": { title: "Solicitudes", subtitle: "Mantenimiento e incidentes" },
     "/portal/unidad": { title: "Mi unidad", subtitle: `${current.unit} · ${current.building}` },
+    "/portal/perfil": { title: "Mi perfil", subtitle: "Tus datos, rol y asignaciones" },
   };
   const { title, subtitle } = PAGE_META[pathname] || PAGE_META["/portal"];
 
