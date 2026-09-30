@@ -1,3 +1,4 @@
+import AppError from "../../utils/AppError.js";
 import {
   INCIDENT_SEVERITIES,
   INCIDENT_STATUSES,
@@ -32,21 +33,24 @@ export function validateCreateIncident(body: unknown): CreateIncidentDto {
     data.title.trim().length === 0 ||
     data.title.length > 150
   ) {
-    throw new Error("title debe ser un texto de entre 1 y 150 caracteres");
+    throw new AppError(
+      "title debe ser un texto de entre 1 y 150 caracteres",
+      400,
+    );
   }
 
   if (
     typeof data.description !== "string" ||
     data.description.trim().length === 0
   ) {
-    throw new Error("description es obligatorio");
+    throw new AppError("description es obligatorio", 400);
   }
 
   if (
     typeof data.severity !== "string" ||
     !INCIDENT_SEVERITIES.includes(data.severity as IncidentSeverity)
   ) {
-    throw new Error("severity inválido");
+    throw new AppError("severity inválido", 400);
   }
 
   return {
@@ -67,7 +71,7 @@ export function validateListIncidents(
     typeof query.status !== "string" ||
     !INCIDENT_STATUSES.includes(query.status as IncidentStatus)
   ) {
-    throw new Error("status inválido");
+    throw new AppError("status inválido", 400);
   }
 
   return {
@@ -84,7 +88,7 @@ export function validateUpdateIncident(body: unknown): UpdateIncidentDto {
       typeof data.status !== "string" ||
       !INCIDENT_STATUSES.includes(data.status as IncidentStatus)
     ) {
-      throw new Error("status inválido");
+      throw new AppError("status inválido", 400);
     }
 
     result.status = data.status as IncidentStatus;
@@ -92,7 +96,7 @@ export function validateUpdateIncident(body: unknown): UpdateIncidentDto {
 
   if (data.assignedToPersonId !== undefined) {
     if (data.assignedToPersonId !== null && !isUuid(data.assignedToPersonId)) {
-      throw new Error("assignedToPersonId debe ser un UUID válido");
+      throw new AppError("assignedToPersonId debe ser un UUID válido", 400);
     }
 
     result.assignedToPersonId = data.assignedToPersonId as string | null;
