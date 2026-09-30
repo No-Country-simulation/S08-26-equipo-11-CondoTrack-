@@ -5,6 +5,7 @@ import { TopBar } from "@/shared/components/TopBar";
 const PAGE_META = {
   "/recepcion": { title: "Accesos", subtitle: "Registro de ingresos y egresos en tiempo real" },
   "/recepcion/deliveries": { title: "Deliveries", subtitle: "Correspondencia y paquetes recibidos" },
+  "/recepcion/perfil": { title: "Mi perfil", subtitle: "Tus datos, rol y asignaciones" },
 };
 
 export const ReceptionLayout = () => {
