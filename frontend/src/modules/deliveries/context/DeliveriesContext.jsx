@@ -14,6 +14,7 @@ import { useBuildings } from "@/modules/buildings/context/BuildingsContext";
 import { useNotificationsStore } from "@/modules/notifications/context/NotificationsContext";
 import {
   listBuildingDeliveries,
+  listMyDeliveries,
   markPickedUp as markPickedUpRequest,
   registerDelivery as registerDeliveryRequest,
 } from "@/modules/deliveries/services/deliveriesService";
@@ -27,6 +28,10 @@ const DeliveriesContext = createContext(null);
 // siendo un cambio local (se pisa al refrescar).
 export function DeliveriesProvider({ children }) {
   const [deliveriesByBuilding, setDeliveriesByBuilding] = useState({});
+  // Deliveries del residente autenticado. El backend los resuelve por sus
+  // unidades vigentes (GET /deliveries/mine), así que no hay que filtrar por
+  // código de unidad, que es lo que fallaba con unidades renombradas.
+  const [mine, setMine] = useState([]);
   const fetchedRef = useRef(new Set());
   const { isAuthenticated } = useAuth();
   const { buildings } = useBuildings();
@@ -74,15 +79,31 @@ export function DeliveriesProvider({ children }) {
     [],
   );
 
+  // Los deliveries del residente exigen rol RESIDENT: un ADMIN recibe 403 y
+  // se queda con la lista vacía en vez de romper la pantalla.
+  const refreshMine = useCallback(async () => {
+    if (!isAuthenticated) {
+      setMine([]);
+      return;
+    }
+    try {
+      setMine(await listMyDeliveries());
+    } catch {
+      setMine([]);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (!isAuthenticated) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia deliveries al cerrar sesión
       setDeliveriesByBuilding({});
       fetchedRef.current.clear();
+      setMine([]);
       return;
     }
+    refreshMine();
     buildings.forEach((building) => fetchBuildingDeliveries(building.id));
-  }, [isAuthenticated, buildings, fetchBuildingDeliveries]);
+  }, [isAuthenticated, buildings, fetchBuildingDeliveries, refreshMine]);
 
   const refreshBuilding = useCallback(
     async (buildingId) => {
@@ -123,7 +144,19 @@ export function DeliveriesProvider({ children }) {
       action: `Registró un delivery de ${created.carrier}`,
       buildingId,
     });
+    // Aviso para el residente: el paquete ya está en portería. El aviso de
+    // la app (el banner "Pasá por portería") se arma con los deliveries del
+    // backend, así que no depende de esta notificación.
+    notify({
+      type: "delivery",
+      title: "Paquete recibido en portería",
+      body: created.trackingNumber || created.carrier,
+      buildingId,
+      unit: created.unit,
+    });
+    // Tras registrar un paquete, el resident ya lo ve en /deliveries/mine.
     await refreshBuilding(buildingId);
+    await refreshMine();
     return created;
   };
 
@@ -172,6 +205,8 @@ export function DeliveriesProvider({ children }) {
     <DeliveriesContext.Provider
       value={{
         deliveries,
+        mine,
+        refreshMine,
         forUnit,
         forBuilding,
         notifyResident,
