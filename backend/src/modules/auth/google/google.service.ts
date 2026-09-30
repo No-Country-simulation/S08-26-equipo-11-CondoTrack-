@@ -4,6 +4,8 @@ import { User } from "../../users/user.model.js";
 import { signToken } from "../jwt.js";
 import { LocalAuthRepository } from "../local/auth.repository.js";
 import { GoogleUserData } from "./google.types.js";
+import AppError from "../../../utils/AppError.js";
+import { AuditLog } from "../../audit/audit.model.js";
 
 export async function authenticateWithGoogle(googleUser: GoogleUserData) {
   let user = await User.findOne({
@@ -37,6 +39,9 @@ export async function authenticateWithGoogle(googleUser: GoogleUserData) {
       );
     });
   } else {
+    if (user.status !== "ACTIVE") {
+      throw new AppError("No autorizado", 401);
+    }
     user.googleId = googleUser.googleId;
     user.lastLoginAt = new Date();
 
@@ -45,6 +50,18 @@ export async function authenticateWithGoogle(googleUser: GoogleUserData) {
 
   const roles = await new LocalAuthRepository().findUserRoles(user.id);
   const token = signToken({ sub: user.id, roles });
+
+  await AuditLog.create({
+    buildingId: null,
+    unitId: null,
+    performedBy: user.id,
+    action: "LOGIN",
+    tableName: "users",
+    recordId: user.id,
+    oldValues: null,
+    newValues: null,
+    ipAddress: null,
+  });
 
   return {
     token,

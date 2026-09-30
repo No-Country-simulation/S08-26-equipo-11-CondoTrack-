@@ -9,6 +9,7 @@ import { signToken, JwtRole } from "../jwt.js";
 import { LoginUserDto } from "./login.dto.js";
 import { RegisterDto } from "./register.dto.js";
 import { LocalAuthRepository } from "./auth.repository.js";
+import { AuditLog } from "../../audit/audit.model.js";
 
 const BCRYPT_ROUNDS = 10;
 const INVALID_CREDENTIALS_MESSAGE = "Email o contraseña incorrectos";
@@ -160,6 +161,18 @@ export class LocalAuthService {
     }
 
     await this.authRepository.updateLastLoginAt(user.id);
+
+    await AuditLog.create({
+      buildingId: null,
+      unitId: null,
+      performedBy: user.id,
+      action: "LOGIN",
+      tableName: "users",
+      recordId: user.id,
+      oldValues: null,
+      newValues: null,
+      ipAddress: null,
+    });
 
     const token = signToken({ sub: user.id, roles });
 

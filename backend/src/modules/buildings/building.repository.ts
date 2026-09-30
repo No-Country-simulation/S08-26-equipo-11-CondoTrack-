@@ -1,17 +1,17 @@
 import { Op, WhereOptions } from "sequelize";
 
 import { Building, BuildingCreationAttributes } from "./building.model.js";
+import { UpdateBuildingDto } from "./update-building.dto.js";
 
 export class BuildingRepository {
   create(data: BuildingCreationAttributes): Promise<Building> {
     return Building.create(data);
   }
 
-  /**
-   * buildingIds null = sin filtro de alcance (SUPER_ADMIN).
-   * Un array, incluso vacio, acota el resultado a esos edificios.
-   */
-  listAll(includeInactive = false, buildingIds: string[] | null = null): Promise<Building[]> {
+  listAll(
+    includeInactive = false,
+    buildingIds: string[] | null = null,
+  ): Promise<Building[]> {
     const where: WhereOptions<Building> = {};
 
     if (!includeInactive) {
@@ -30,6 +30,12 @@ export class BuildingRepository {
 
   findById(id: string): Promise<Building | null> {
     return Building.findByPk(id);
+  }
+
+  async update(id: string, data: UpdateBuildingDto): Promise<Building | null> {
+    const building = await Building.findByPk(id);
+
+    return building ? building.update(data) : null;
   }
 }
 

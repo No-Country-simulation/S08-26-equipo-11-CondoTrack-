@@ -2,16 +2,18 @@ import { User } from "../modules/users/user.model.js";
 import { Role } from "../modules/roles/role.model.js";
 import { Building } from "../modules/buildings/building.model.js";
 import { Unit } from "../modules/units/unit.model.js";
-
 import { UserBuildingRole } from "../modules/users-buildings-roles/user-building-role.model.js";
-
 import { AuditLog } from "../modules/audit/audit.model.js";
 import { Person } from "../modules/people/people.model.js";
 import { UnitPeople } from "../modules/unit-people/unit-people.model.js";
+import { AccessAuthorization } from "../modules/accesses/access-authorization.model.js";
+import { AccessEvent } from "../modules/accesses/access-event.model.js";
+import { CommonArea } from "../modules/common-areas/common-area.model.js";
+import { Reservation } from "../modules/reservations/reservation.model.js";
+import { Incident } from "../modules/incidents/incident.model.js";
+import { Delivery } from "../modules/deliveries/delivery.model.js";
 
 export function setupRelations(): void {
-  // User <-> UserBuildingRole
-  // un usuario puede tener multiples asignaciones de rol dentro de diferentes edificios
   User.hasMany(UserBuildingRole, {
     foreignKey: "userId",
     as: "buildingRoles",
@@ -22,8 +24,6 @@ export function setupRelations(): void {
     as: "user",
   });
 
-  // Role <-> UserBuildingRole
-  // un rol puede ser asignado a multiples usuarios y edificios
   Role.hasMany(UserBuildingRole, {
     foreignKey: "roleId",
     as: "userBuildingRoles",
@@ -34,8 +34,6 @@ export function setupRelations(): void {
     as: "role",
   });
 
-  // Building <-> UserBuildingRole
-  // un edificio puede tener multiples usuarios con diferentes roles
   Building.hasMany(UserBuildingRole, {
     foreignKey: "buildingId",
     as: "userBuildingRoles",
@@ -46,8 +44,6 @@ export function setupRelations(): void {
     as: "building",
   });
 
-  // User <-> Role (N:M a traves de UserBuildingRole)
-  // un usuario puede tener multiples roles y un rol puede pertenecer a multiples usuarios
   User.belongsToMany(Role, {
     through: UserBuildingRole,
     foreignKey: "userId",
@@ -62,8 +58,6 @@ export function setupRelations(): void {
     as: "users",
   });
 
-  // User <-> Building (N:M a traves de UserBuildingRole)
-  // un usuario puede estar asociado a multiples edificios y un edificio puede tener multiples usuarios
   User.belongsToMany(Building, {
     through: UserBuildingRole,
     foreignKey: "userId",
@@ -78,8 +72,6 @@ export function setupRelations(): void {
     as: "users",
   });
 
-  // Building <-> Unit
-  // un edificio tiene multiples unidades, y cada unidad pertenece a un unico edificio
   Building.hasMany(Unit, {
     foreignKey: "buildingId",
     as: "units",
@@ -90,8 +82,6 @@ export function setupRelations(): void {
     as: "building",
   });
 
-  // Building <-> AuditLog
-  // un edificio puede tener multiples registros en la bitacora unificada
   Building.hasMany(AuditLog, {
     foreignKey: "buildingId",
     as: "auditLogs",
@@ -102,8 +92,6 @@ export function setupRelations(): void {
     as: "building",
   });
 
-  // Unit <-> AuditLog
-  // una unidad puede tener multiples registros en la bitacora (campo opcional en AuditLog)
   Unit.hasMany(AuditLog, {
     foreignKey: "unitId",
     as: "auditLogs",
@@ -114,8 +102,6 @@ export function setupRelations(): void {
     as: "unit",
   });
 
-  // User <-> AuditLog
-  // un usuario puede haber ejecutado multiples acciones registradas en la bitacora
   User.hasMany(AuditLog, {
     foreignKey: "performedBy",
     as: "performedAuditLogs",
@@ -126,8 +112,6 @@ export function setupRelations(): void {
     as: "performedByUser",
   });
 
-  // Person <-> UnitPeople (N:M atraves de UnitPeople)
-  // una persona puede estar registrada en multiples unidades y una unidad puede tener multiples personas asociadas
   Unit.hasMany(UnitPeople, {
     foreignKey: "unitId",
     as: "unitPeople",
@@ -148,8 +132,6 @@ export function setupRelations(): void {
     as: "person",
   });
 
-  // Person <-> User (1 a 0..1 via users.person_id)
-  // una persona puede tener a lo sumo un usuario asociado, y la FK vive en users.person_id, NO en people.
   Person.hasOne(User, {
     foreignKey: "personId",
     as: "user",
@@ -160,8 +142,232 @@ export function setupRelations(): void {
     as: "person",
   });
 
-  // Sprint futuro: a medida que se sumen nuevas tablas (Amenities, Reservations,
-  // Deliveries, Visits, Incidents, Moves, Notifications...) agregar aca sus
-  // relaciones siguiendo el mismo patron usado arriba: hasMany() del lado "padre"
-  // + belongsTo() del lado "hijo", cada uno con foreignKey y as explicitos.
+  Building.hasMany(AccessAuthorization, {
+    foreignKey: "buildingId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Building.hasMany(CommonArea, {
+    foreignKey: "buildingId",
+    as: "commonAreas",
+  });
+
+  CommonArea.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(AccessAuthorization, {
+    foreignKey: "unitId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(AccessAuthorization, {
+    foreignKey: "visitorId",
+    as: "accessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(Person, {
+    foreignKey: "visitorId",
+    as: "visitor",
+  });
+
+  User.hasMany(AccessAuthorization, {
+    foreignKey: "authorizedByUserId",
+    as: "authorizedAccessAuthorizations",
+  });
+
+  AccessAuthorization.belongsTo(User, {
+    foreignKey: "authorizedByUserId",
+    as: "authorizedBy",
+  });
+
+  Building.hasMany(Reservation, {
+    foreignKey: "buildingId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  CommonArea.hasMany(Reservation, {
+    foreignKey: "commonAreaId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(CommonArea, {
+    foreignKey: "commonAreaId",
+    as: "commonArea",
+  });
+
+  Unit.hasMany(Reservation, {
+    foreignKey: "unitId",
+    as: "reservations",
+  });
+
+  Reservation.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  User.hasMany(Reservation, {
+    foreignKey: "requestedByUserId",
+    as: "requestedReservations",
+  });
+
+  Reservation.belongsTo(User, {
+    foreignKey: "requestedByUserId",
+    as: "requestedByUser",
+  });
+
+  Building.hasMany(Incident, {
+    foreignKey: "buildingId",
+    as: "incidents",
+  });
+
+  Incident.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(Incident, {
+    foreignKey: "unitId",
+    as: "incidents",
+  });
+
+  Incident.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  User.hasMany(Incident, {
+    foreignKey: "reportedByUserId",
+    as: "reportedIncidents",
+  });
+
+  Incident.belongsTo(User, {
+    foreignKey: "reportedByUserId",
+    as: "reportedBy",
+  });
+
+  Person.hasMany(Incident, {
+    foreignKey: "assignedToPersonId",
+    as: "assignedIncidents",
+  });
+
+  Incident.belongsTo(Person, {
+    foreignKey: "assignedToPersonId",
+    as: "assignedTo",
+  });
+
+  Building.hasMany(AccessEvent, {
+    foreignKey: "buildingId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(AccessEvent, {
+    foreignKey: "unitId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(AccessEvent, {
+    foreignKey: "visitorId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(Person, {
+    foreignKey: "visitorId",
+    as: "visitor",
+  });
+
+  AccessAuthorization.hasMany(AccessEvent, {
+    foreignKey: "authorizationId",
+    as: "accessEvents",
+  });
+
+  AccessEvent.belongsTo(AccessAuthorization, {
+    foreignKey: "authorizationId",
+    as: "authorization",
+  });
+
+  User.hasMany(AccessEvent, {
+    foreignKey: "registeredByUserId",
+    as: "registeredAccessEvents",
+  });
+
+  AccessEvent.belongsTo(User, {
+    foreignKey: "registeredByUserId",
+    as: "registeredBy",
+  });
+  Building.hasMany(Delivery, {
+    foreignKey: "buildingId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Building, {
+    foreignKey: "buildingId",
+    as: "building",
+  });
+
+  Unit.hasMany(Delivery, {
+    foreignKey: "unitId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Unit, {
+    foreignKey: "unitId",
+    as: "unit",
+  });
+
+  Person.hasMany(Delivery, {
+    foreignKey: "recipientPersonId",
+    as: "deliveries",
+  });
+
+  Delivery.belongsTo(Person, {
+    foreignKey: "recipientPersonId",
+    as: "recipient",
+  });
+
+  User.hasMany(Delivery, {
+    foreignKey: "receivedByUserId",
+    as: "receivedDeliveries",
+  });
+
+  Delivery.belongsTo(User, {
+    foreignKey: "receivedByUserId",
+    as: "receivedBy",
+  });
+
+  User.hasMany(Delivery, {
+    foreignKey: "pickedUpByUserId",
+    as: "pickedUpDeliveries",
+  });
+
+  Delivery.belongsTo(User, {
+    foreignKey: "pickedUpByUserId",
+    as: "pickedUpBy",
+  });
 }

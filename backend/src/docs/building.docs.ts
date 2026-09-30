@@ -179,5 +179,75 @@
  *                 success: false
  *                 message: Edificio no encontrado
  */
+/**
+ * @openapi
+ * paths:
+ *   /api/buildings/{id}:
+ *     patch:
+ *       tags:
+ *         - Buildings
+ *       summary: Actualizar un edificio
+ *       description: Solo SUPER_ADMIN puede actualizar los datos de un edificio.
+ *       security:
+ *         - bearerAuth: []
+ *       parameters:
+ *         - in: path
+ *           name: id
+ *           required: true
+ *           description: ID del edificio
+ *           schema:
+ *             type: string
+ *             format: uuid
+ *       requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties: false
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 100
+ *                 address:
+ *                   type: string
+ *                   minLength: 1
+ *                   maxLength: 255
+ *                 numberOfFloors:
+ *                   type: integer
+ *                   minimum: 0
+ *                 numberOfUnits:
+ *                   type: integer
+ *                   minimum: 0
+ *                 isActive:
+ *                   type: boolean
+ *             example:
+ *               name: Torres del Parque
+ *               numberOfFloors: 12
+ *               numberOfUnits: 48
+ *               isActive: true
+ *       responses:
+ *         '200':
+ *           description: Edificio actualizado correctamente
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 properties:
+ *                   success:
+ *                     type: boolean
+ *                     example: true
+ *                   data:
+ *                     $ref: '#/components/schemas/Building'
+ *         '400':
+ *           description: ID o datos inválidos
+ *         '401':
+ *           description: JWT ausente o inválido
+ *         '403':
+ *           description: Solo SUPER_ADMIN puede actualizar edificios
+ *         '404':
+ *           description: Edificio no encontrado
+ */
 
 export {};
