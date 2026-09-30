@@ -1,8 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 
 const READER_ID = "ct-qr-reader";
+
+// html5-qrcode tira de forma síncrona (y como string, no Error) cuando se llama
+// stop() sin escaneo activo, y clear() no devuelve Promise. Por eso va try/catch.
+const stopScanner = async (scanner) => {
+  if (!scanner) return;
+  try {
+    if (scanner.getState() !== Html5QrcodeScannerState.NOT_STARTED) {
+      await scanner.stop();
+    }
+  } catch {
+    // ignore: ya estaba detenido o nunca arrancó
+  }
+  try {
+    scanner.clear();
+  } catch {
+    // ignore
+  }
+};
 
 // Escáner de QR con la cámara (librería html5-qrcode).
 // Al leer un código válido llama onScan(token) y se detiene.
@@ -48,28 +66,14 @@ export const QrScanner = ({ onScan, onClose }) => {
 
     return () => {
       cancelled = true;
-      scanner
-        .stop()
-        .catch(() => {})
-        .finally(() => {
-          scanner.clear().catch(() => {});
-        });
+      stopScanner(scanner);
+      scannerRef.current = null;
     };
   }, []);
 
   const handleClose = async () => {
-    try {
-      await scannerRef.current?.stop();
-    } catch {
-      // ignore
-    } finally {
-      try {
-        await scannerRef.current?.clear();
-      } catch {
-        // ignore
-      }
-      onClose?.();
-    }
+    await stopScanner(scannerRef.current);
+    onClose?.();
   };
 
   return (
