@@ -7,7 +7,8 @@ import { useIncidents } from "@/modules/incidents/hooks/useIncidents";
 import { useMaintenance } from "@/modules/maintenance/hooks/useMaintenance";
 import { useResidents } from "@/modules/residents/hooks/useResidents";
 import { useStaffByRole } from "@/modules/staff/hooks/useStaffByRole";
-import { useMoves } from "@/modules/moves/context/MovesContext";
+import { useUnits } from "@/modules/units/context/UnitsContext";
+import { kpiByUnits, kpiWithoutSource } from "@/shared/utils/kpi";
 
 export const DashboardHomePage = () => {
   const { building } = useOutletContext();
@@ -22,35 +23,69 @@ export const DashboardHomePage = () => {
   // Todo vinculado al edificio seleccionado en el sidebar.
   const { forBuilding: residentsForBuilding } = useResidents();
   const { forBuilding: accessForBuilding } = useAccessLogs();
-  const { forBuilding: deliveriesForBuilding } = useDeliveries();
-  const { forBuilding: incidentsForBuilding } = useIncidents();
+  const { pendingForBuilding, notifiedForBuilding } = useDeliveries();
+  const { openForBuilding } = useIncidents();
   const { forBuilding: maintenanceForBuilding } = useMaintenance();
+  const { forBuilding: unitsForBuilding } = useUnits();
   const { staff } = useStaffByRole(buildingId);
-  const { forBuilding: movesForBuilding } = useMoves();
+
+  // Todos los KPIs salvo el de personal cuelgan de las unidades del edificio:
+  // sin unidades no hay nada que medir y mostrar 0 sería un dato falso.
+  const hasUnits = unitsForBuilding(buildingId).length > 0;
 
   const residents = residentsForBuilding(buildingId);
   const logs = accessForBuilding(buildingId);
-  const deniedCount = logs.filter((l) => l.status === "denied").length;
-  const buildingDeliveries = deliveriesForBuilding(buildingId);
-  const pendingDeliveries = buildingDeliveries.filter((d) => d.status === "pending");
-  const notified = buildingDeliveries.filter((d) => d.status === "notified");
-  const buildingIncidents = incidentsForBuilding(buildingId);
-  const openIncidents = buildingIncidents.filter((i) => i.status === "open");
+  // El backend devuelve los enums en mayúsculas (RECEIVED, OPEN, HIGH...);
+  // la tolerancia a ambas variantes vive en los hooks.
+  const pendingDeliveries = pendingForBuilding(buildingId);
+  const notified = notifiedForBuilding(buildingId);
+  const openIncidents = openForBuilding(buildingId);
+  const criticalIncidents = openIncidents.filter(
+    (i) => i.severity === "high" || i.severity === "HIGH" || i.severity === "CRITICAL",
+  );
   const maintenanceItems = maintenanceForBuilding(buildingId);
   const inProgressMaintenance = maintenanceItems.filter((m) => m.status !== "resolved");
-  const moves = movesForBuilding(buildingId);
-  const pendingMoves = moves.filter((m) => m.status === "pending");
+  // Accesos y mantenimientos siguen alimentados por mock. Solo se listan si el
+  // edificio tiene unidades, para no presentar filas de otro edificio.
+  const accessList = hasUnits ? logs : [];
+  const maintenanceList = hasUnits ? inProgressMaintenance : [];
+
+  // El vínculo al resident es lo que define si sigue vigente: `status` viene
+  // hardcodeado en "active" desde el service, así que no sirve para contar.
+  const activeResidents = residents.filter(
+    (r) => !r.endDate || new Date(r.endDate) >= new Date(),
+  );
+
+  const residentsKpi = kpiByUnits(
+    activeResidents.length,
+    hasUnits,
+    `${residents.length} totales`,
+  );
+  const deliveriesKpi = kpiByUnits(
+    pendingDeliveries.length,
+    hasUnits,
+    `${notified.length} notificado(s)`,
+  );
+  const incidentsKpi = kpiByUnits(
+    openIncidents.length,
+    hasUnits,
+    `${criticalIncidents.length} crítico(s)`,
+  );
+  // Accesos y mudanzas siguen alimentados por mock: no hay endpoint para
+  // listar eventos de acceso ni carpeta de servicios en mudanzas.
+  const accessKpi = kpiWithoutSource("El backend no expone un listado de accesos");
+  const movesKpi = kpiWithoutSource("Módulo todavía sin conexión con el backend");
 
   return (
     <div className="ct-main-scroll">
       <p className="ct-font-mono ct-text-muted mb-4 text-capitalize" style={{ fontSize: "0.75rem" }}>{today}</p>
 
       <div className="ct-grid-kpi mb-4">
-        <KpiCard label="Residentes activos" value={residents.filter((r) => r.status === "active").length} sub={`${residents.length} totales`} accent="var(--color-accent-light)" icon="residents" />
-        <KpiCard label="Ingresos hoy" value={logs.filter((l) => l.direction === "Ingreso").length} sub={`${deniedCount} denegados`} accent="var(--color-green-light)" icon="access" />
-        <KpiCard label="Deliveries pendientes" value={pendingDeliveries.length} sub={`${pendingDeliveries.length - notified.length} sin notificar`} accent="var(--color-amber-light)" icon="deliveries" />
-        <KpiCard label="Incidentes abiertos" value={openIncidents.length} sub={`${openIncidents.filter((i) => i.severity === "high").length} crítico(s)`} accent="var(--color-red-light)" icon="incidents" />
-        <KpiCard label="Mudanzas pendientes" value={pendingMoves.length} sub={`${moves.length} totales`} accent="var(--color-purple-light)" icon="move" />
+        <KpiCard label="Residentes activos" value={residentsKpi.value} sub={residentsKpi.sub} accent="var(--color-accent-light)" icon="residents" />
+        <KpiCard label="Ingresos hoy" value={accessKpi.value} sub={accessKpi.sub} accent="var(--color-green-light)" icon="access" />
+        <KpiCard label="Deliveries pendientes" value={deliveriesKpi.value} sub={deliveriesKpi.sub} accent="var(--color-amber-light)" icon="deliveries" />
+        <KpiCard label="Incidentes abiertos" value={incidentsKpi.value} sub={incidentsKpi.sub} accent="var(--color-red-light)" icon="incidents" />
+        <KpiCard label="Mudanzas pendientes" value={movesKpi.value} sub={movesKpi.sub} accent="var(--color-purple-light)" icon="move" />
         <KpiCard label="Personal registrado" value={staff.length} sub="Recepción, mantenimiento y administración" accent="var(--color-accent-light)" icon="person" />
       </div>
 
@@ -61,13 +96,14 @@ export const DashboardHomePage = () => {
             <Link to="/dashboard/accesos" className="ct-card-link">Ver todos</Link>
           </div>
           <div>
-            {logs.length === 0 ? (
+            {accessList.length === 0 ? (
               <p className="ct-text-muted mb-0 py-3">
-                Sin accesos registrados. El historial real se alimenta al
-                validar un QR o registrar un egreso.
+                {hasUnits
+                  ? "Sin accesos registrados. El historial real se alimenta al validar un QR o registrar un egreso."
+                  : "Sin unidades en este edificio"}
               </p>
             ) : (
-              logs.slice(0, 5).map((log) => (
+              accessList.slice(0, 5).map((log) => (
               <div key={log.id} className="ct-row ct-row-hover d-flex align-items-center gap-3">
                 <span className="ct-font-mono ct-text-muted" style={{ fontSize: "0.75rem", width: 40, flexShrink: 0 }}>{log.time}</span>
                 <div className="flex-grow-1 min-w-0">
@@ -91,7 +127,9 @@ export const DashboardHomePage = () => {
               <Link to="/dashboard/deliveries" className="ct-card-link">Ver todos</Link>
             </div>
             <div>
-              {pendingDeliveries.map((delivery) => (
+              {pendingDeliveries.length === 0 ? (
+                <p className="ct-text-muted mb-0 py-3">{hasUnits ? "Sin deliveries pendientes" : "Sin unidades en este edificio"}</p>
+              ) : pendingDeliveries.map((delivery) => (
                 <div key={delivery.id} className="ct-row ct-row-hover">
                   <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{delivery.carrier}</p>
                   <p className="ct-font-mono ct-text-muted mb-0" style={{ fontSize: "0.75rem" }}>{delivery.trackingNumber || delivery.resident || "Sin seguimiento"}</p>
@@ -106,7 +144,9 @@ export const DashboardHomePage = () => {
               <Link to="/dashboard/incidentes" className="ct-card-link">Ver todos</Link>
             </div>
             <div>
-              {openIncidents.map((incident) => (
+              {openIncidents.length === 0 ? (
+                <p className="ct-text-muted mb-0 py-3">{hasUnits ? "Sin incidentes abiertos" : "Sin unidades en este edificio"}</p>
+              ) : openIncidents.map((incident) => (
                 <div key={incident.id} className="ct-row ct-row-hover">
                   <div className="d-flex align-items-start justify-content-between gap-2">
                     <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{incident.title}</p>
@@ -126,12 +166,14 @@ export const DashboardHomePage = () => {
           <Link to="/dashboard/mantenimiento" className="ct-card-link">Ver todos</Link>
         </div>
         <div className="ct-grid-maintenance">
-          {inProgressMaintenance.length === 0 ? (
+          {maintenanceList.length === 0 ? (
             <p className="ct-text-muted mb-0 py-3">
-              Sin mantenimientos en curso en este edificio.
+              {hasUnits
+                ? "Sin mantenimientos en curso en este edificio."
+                : "Sin unidades en este edificio"}
             </p>
           ) : (
-            inProgressMaintenance.map((item) => (
+            maintenanceList.map((item) => (
             <div key={item.id} className="ct-row ct-row-hover">
               <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
                 <p className="mb-0 fw-medium" style={{ color: "var(--color-ink)" }}>{item.title}</p>
