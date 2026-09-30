@@ -138,7 +138,7 @@
  *       tags:
  *         - Auth
  *       summary: Obtener el usuario autenticado
- *       description: Devuelve los datos del usuario identificado por el JWT, sus roles, edificios y unidades asignadas actualmente.
+ *       description: Devuelve los datos del usuario identificado por el JWT, su perfil, roles, edificios y unidades asignadas actualmente.
  *       security:
  *         - bearerAuth: []
  *       responses:
@@ -161,6 +161,7 @@
  *                       - id
  *                       - email
  *                       - status
+ *                       - profileComplete
  *                       - roles
  *                       - buildings
  *                       - units
@@ -173,6 +174,35 @@
  *                         format: email
  *                       status:
  *                         $ref: '#/components/schemas/UserStatus'
+ *                       profile:
+ *                         type: object
+ *                         nullable: true
+ *                         description: Datos personales asociados al usuario.
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           firstName:
+ *                             type: string
+ *                           lastName:
+ *                             type: string
+ *                           documentType:
+ *                             type: string
+ *                             nullable: true
+ *                           documentNumber:
+ *                             type: string
+ *                             nullable: true
+ *                           email:
+ *                             type: string
+ *                             format: email
+ *                             nullable: true
+ *                           phone:
+ *                             type: string
+ *                             nullable: true
+ *                       profileComplete:
+ *                         type: boolean
+ *                         description: Indica si el perfil tiene completos los datos requeridos.
+ *                         example: true
  *                       roles:
  *                         type: array
  *                         items:
