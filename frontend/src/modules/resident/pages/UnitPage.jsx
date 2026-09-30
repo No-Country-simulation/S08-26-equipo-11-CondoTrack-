@@ -1,23 +1,98 @@
 import { useEffect, useState } from "react";
-import {
-  BUILDING_CONTACTS,
-  BUILDING_RULES,
-} from "@/modules/resident/data/unit.data";
+import { StatusBadge } from "@/shared/components/StatusBadge";
 import { useCurrentResident } from "@/modules/resident/hooks/useCurrentResident";
 import { listCommonAreas } from "@/modules/amenities/services/commonAreasService";
+import { listUnits } from "@/modules/units/services/unitsService";
+import { listUnitResidents } from "@/modules/residents/services/residentsService";
+import { useStaffByRole } from "@/modules/staff/hooks/useStaffByRole";
 
+const RELATIONSHIP_LABELS = {
+  RESIDENT: "Residente",
+  OWNER: "Propietario",
+  TENANT: "Inquilino",
+  FAMILY: "Familiar",
+};
+
+const formatSince = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("es-AR", { month: "short", year: "numeric" });
+};
+
+// Ficha real de la unidad del residente: todo sale del backend. Antes la
+// pantalla sembraba superficie, cochera, baulera, contactos de portería y
+// reglamento interno, y ninguno de esos datos existe en la API.
 export const UnitPage = () => {
   const current = useCurrentResident();
-  const [areas, setAreas] = useState(null);
+  const { staff, isLoading: staffLoading } = useStaffByRole(current.buildingId);
+  const [unit, setUnit] = useState(null);
+  const [residents, setResidents] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Amenities reales del edificio (el backend las expone al RESIDENT).
-  // Si falla o viene vacío, se muestran las de referencia locales.
+  // La sesión trae el id de la unidad pero no su detalle: hay que buscarlo
+  // entre las unidades del edificio.
   useEffect(() => {
-    if (!current.buildingId) {
+    if (!current.buildingId || !current.unitId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia el detalle al perder la sesión
+      setUnit(null);
+       
+      setResidents([]);
       return undefined;
     }
 
     let cancelled = false;
+     
+    setLoading(true);
+    setError("");
+
+    listUnits(current.buildingId)
+      .then(({ units }) => {
+        const found = units.find((item) => item.id === current.unitId);
+        if (cancelled) return;
+        if (!found) {
+          setUnit(null);
+          setError("No encontramos tu unidad en este edificio.");
+          return null;
+        }
+        setUnit(found);
+        return found;
+      })
+      .then((found) =>
+        // Los vínculos de la unidad solo se piden si la unidad existe.
+        found ? listUnitResidents(found).catch(() => []) : [],
+      )
+      .then((links) => {
+        if (!cancelled) setResidents(links);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(
+          err?.response?.data?.message ??
+            "No se pudo cargar el detalle de tu unidad.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [current.buildingId, current.unitId]);
+
+  // Espacios comunes reales del edificio.
+  useEffect(() => {
+    if (!current.buildingId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia al perder el edificio
+      setAreas([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+
     listCommonAreas(current.buildingId)
       .then((items) => {
         if (!cancelled) setAreas(items);
@@ -31,22 +106,37 @@ export const UnitPage = () => {
     };
   }, [current.buildingId]);
 
-  // Solo espacios reales del backend: si no hay, se muestra el estado vacío
-  // en vez de la lista de ejemplo del mock.
-  const amenities = (areas ?? []).map((area) => area.name);
+  if (!current.hasUnit) {
+    return (
+      <div className="ct-main-scroll">
+        <div className="ct-card p-4">
+          <p className="ct-text-muted mb-0">
+            Tu cuenta todavía no tiene una unidad asignada. Pedí al
+            administrador que la vincule para ver el detalle.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const UNIT_STATS = [
-    { label: "Edificios", val: current.buildingLabel },
+  if (loading) {
+    return (
+      <div className="ct-main-scroll">
+        <p className="ct-text-muted">Cargando tu unidad...</p>
+      </div>
+    );
+  }
+
+  const unitStats = [
+    { label: "Edificio", val: current.buildingLabel },
+    { label: "Unidad", val: unit?.code ?? current.unitLabel },
     {
       label: "Piso",
-      val: current.unitFloor == null ? "—" : `${current.unitFloor}°`,
+      val: unit?.floor == null ? "—" : `${unit.floor}°`,
     },
-    { label: "Tipo", val: current.unitType ?? "—" },
-    { label: "Superficie", val: "82 m²" },
-    { label: "Unidad", val: "Nro. 24" },
-    { label: "Baulera", val: "Nro. 08" },
-    { label: "Desde", val: "—" },
-    { label: "Condición", val: "—" },
+    { label: "Tipo", val: unit?.unitType || "—" },
+    { label: "Estado", val: unit?.isActive === false ? "Inactiva" : "Activa" },
+    { label: "Integrantes", val: String(residents.length) },
   ];
 
   return (
@@ -55,15 +145,18 @@ export const UnitPage = () => {
         <div className="d-flex flex-column gap-4">
           <div className="ct-card overflow-hidden">
             <div className="ct-building-cover" style={{ height: "7rem" }}>
-              <img
-                src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&h=112&fit=crop&auto=format"
-                alt={`Unidad ${current.unitLabel}`}
-              />
-              <p className="ct-building-cover-title">Unidad {current.unitLabel}</p>
+              <p className="ct-building-cover-title">
+                Unidad {unit?.code ?? current.unitLabel}
+              </p>
             </div>
             <div className="p-3">
+              {error ? (
+                <p className="ct-text-muted mb-0">{error}</p>
+              ) : unit?.description ? (
+                <p className="ct-text-muted mb-3">{unit.description}</p>
+              ) : null}
               <div className="row row-cols-2 g-3">
-                {UNIT_STATS.map((stat) => (
+                {unitStats.map((stat) => (
                   <div key={stat.label} className="col">
                     <p
                       className="ct-font-mono text-uppercase ct-text-faint mb-0"
@@ -85,32 +178,54 @@ export const UnitPage = () => {
 
           <div className="ct-card">
             <div className="ct-card-header">
-              <p
-                className="ct-font-mono text-uppercase ct-text-muted mb-0"
-                style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}
-              >
-                Amenities del edificio
-              </p>
+              <h3 className="ct-card-title mb-0">Integrantes de la unidad</h3>
             </div>
-            <div className="p-3 d-flex flex-wrap gap-2">
-              {amenities.length === 0 ? (
-                <p className="ct-text-muted mb-0">
-                  Este edificio no tiene espacios comunes cargados.
+            <div>
+              {residents.length === 0 ? (
+                <p className="ct-text-muted mb-0 p-3">
+                  Todavía no hay personas vinculadas a esta unidad.
                 </p>
               ) : (
-                amenities.map((amenity) => (
-                <span
-                  key={amenity}
-                  className="badge rounded-pill fw-medium ct-text-muted"
-                  style={{
-                    border: "1px solid var(--color-border)",
-                    background: "transparent",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  {amenity}
-                </span>
-                ))
+                residents.map((link) => {
+                  const person = link.person ?? {};
+                  const fullName =
+                    `${person.firstName ?? ""} ${person.lastName ?? ""}`.trim() ||
+                    link.email ||
+                    "Sin nombre";
+                  const since = formatSince(link.startDate);
+
+                  return (
+                    <div
+                      key={link.id}
+                      className="ct-row ct-row-hover d-flex align-items-center justify-content-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p
+                          className="mb-0 fw-medium text-truncate"
+                          style={{ color: "var(--color-ink)" }}
+                        >
+                          {fullName}
+                        </p>
+                        <p
+                          className="ct-font-mono ct-text-muted mb-0"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {RELATIONSHIP_LABELS[link.relationshipType] ??
+                            link.relationshipType}
+                          {since ? ` · desde ${since}` : ""}
+                        </p>
+                      </div>
+                      {link.person?.documentNumber && (
+                        <span
+                          className="ct-font-mono ct-text-faint flex-shrink-0"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          {link.person.documentNumber}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -119,76 +234,80 @@ export const UnitPage = () => {
         <div className="d-flex flex-column gap-4">
           <div className="ct-card overflow-hidden">
             <div className="ct-card-header">
-              <h3 className="ct-card-title">Contactos del edificio</h3>
+              <h3 className="ct-card-title">Espacios comunes</h3>
             </div>
-            <div>
-              {BUILDING_CONTACTS.map((contact) => (
-                <div key={contact.role} className="ct-row ct-row-hover">
-                  <div className="d-flex align-items-start justify-content-between gap-3 mb-2">
-                    <div>
-                      <p
-                        className="ct-font-mono text-uppercase ct-text-faint mb-0"
-                        style={{ fontSize: "10px", letterSpacing: "0.05em" }}
-                      >
-                        {contact.role}
-                      </p>
-                      <p
-                        className="fw-semibold mb-0 mt-1"
-                        style={{ color: "var(--color-ink)" }}
-                      >
-                        {contact.name}
-                      </p>
-                    </div>
-                    <span
-                      className="ct-font-mono px-2 py-1 rounded"
-                      style={{
-                        fontSize: "0.6875rem",
-                        background: "var(--color-canvas)",
-                        color: "var(--color-ink-muted)",
-                      }}
-                    >
-                      {contact.hours}
-                    </span>
-                  </div>
-                  <p
-                    className="ct-font-mono mb-0"
-                    style={{ color: "var(--color-accent)" }}
+            <div className="p-3 d-flex flex-wrap gap-2">
+              {areas.length === 0 ? (
+                <p className="ct-text-muted mb-0">
+                  Este edificio no tiene espacios comunes cargados.
+                </p>
+              ) : (
+                areas.map((area) => (
+                  <span
+                    key={area.id}
+                    className="badge rounded-pill fw-medium ct-text-muted"
+                    style={{
+                      border: "1px solid var(--color-border)",
+                      background: "transparent",
+                      fontSize: "0.75rem",
+                    }}
                   >
-                    {contact.phone}
-                  </p>
-                  <p
-                    className="ct-font-mono ct-text-muted mb-0"
-                    style={{ fontSize: "0.75rem" }}
-                  >
-                    {contact.email}
-                  </p>
-                </div>
-              ))}
+                    {area.name}
+                  </span>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="ct-card p-4">
-            <h3 className="ct-card-title mb-3">Reglamento interno</h3>
-            <ul className="list-unstyled d-flex flex-column gap-2 mb-0">
-              {BUILDING_RULES.map((rule) => (
-                <li
-                  key={rule}
-                  className="d-flex align-items-start gap-2 ct-text-muted"
-                >
-                  <span
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: "999px",
-                      background: "var(--color-accent)",
-                      marginTop: 8,
-                      flexShrink: 0,
-                    }}
-                  />
-                  {rule}
-                </li>
-              ))}
-            </ul>
+          <div className="ct-card overflow-hidden">
+            <div className="ct-card-header">
+              <h3 className="ct-card-title">Personal del edificio</h3>
+            </div>
+            <div>
+              {staffLoading ? (
+                <p className="ct-text-muted mb-0 p-3">Cargando personal...</p>
+              ) : staff.length === 0 ? (
+                <p className="ct-text-muted mb-0 p-3">
+                  Este edificio no tiene personal asignado.
+                </p>
+              ) : (
+                staff.map((member) => (
+                  <div key={member.id} className="ct-row ct-row-hover">
+                    <div className="d-flex align-items-start justify-content-between gap-3 mb-2">
+                      <div className="min-w-0">
+                        <p
+                          className="ct-font-mono text-uppercase ct-text-faint mb-0"
+                          style={{ fontSize: "10px", letterSpacing: "0.05em" }}
+                        >
+                          {member.roleLabel}
+                        </p>
+                        <p
+                          className="fw-semibold mb-0 mt-1 text-truncate"
+                          style={{ color: "var(--color-ink)" }}
+                        >
+                          {member.name || member.email}
+                        </p>
+                      </div>
+                      <StatusBadge status={member.status} />
+                    </div>
+                    {member.phone && member.phone !== "—" && (
+                      <p
+                        className="ct-font-mono mb-0"
+                        style={{ color: "var(--color-accent)" }}
+                      >
+                        {member.phone}
+                      </p>
+                    )}
+                    <p
+                      className="ct-font-mono ct-text-muted mb-0"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      {member.email}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
