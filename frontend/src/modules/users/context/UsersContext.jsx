@@ -210,6 +210,7 @@ export function UsersProvider({ children }) {
     logActivity({
       actor,
       action: `Asignó rol ${role} a "${updated.email}"`,
+      buildingId: buildingId ?? null,
     });
 
     await refreshUsers();
@@ -238,6 +239,7 @@ export function UsersProvider({ children }) {
     logActivity({
       actor,
       action: `Quitó rol ${role} a "${updated.email}"`,
+      buildingId: buildingId ?? null,
     });
 
     await refreshUsers();
@@ -256,6 +258,7 @@ export function UsersProvider({ children }) {
     logActivity({
       actor,
       action: `Cambió estado a ${status} de "${updated.email}"`,
+      buildingId: updated.roles?.[0]?.buildingId ?? null,
     });
 
     await refreshUsers();
