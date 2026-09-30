@@ -5,9 +5,21 @@ import PropTypes from "prop-types";
 import { useUnits } from "@/modules/units/context/UnitsContext";
 import { apiErrorMessage } from "@/core/api/api";
 
-const EMPTY_FORM = { code: "", floor: "", unitType: "DEPARTAMENTO", description: "" };
+const EMPTY_FORM = {
+  code: "",
+  floor: "",
+  unitType: "DEPARTAMENTO",
+  description: "",
+};
 
-const UNIT_TYPES = ["DEPARTAMENTO", "LOCAL", "OFICINA", "COCHERA", "BAULERA", "OTRO"];
+const UNIT_TYPES = [
+  "DEPARTAMENTO",
+  "LOCAL",
+  "OFICINA",
+  "COCHERA",
+  "BAULERA",
+  "OTRO",
+];
 
 export const UnitsModal = ({ building, show, onHide }) => {
   const { forBuilding, fetchUnits, isUnitsLoading, unitsError, createUnit } =
@@ -35,7 +47,11 @@ export const UnitsModal = ({ building, show, onHide }) => {
   const validate = () => {
     const errors = {};
     if (!form.code.trim()) errors.code = "El código es obligatorio.";
-    if (form.floor === "" || Number(form.floor) < 0 || !Number.isInteger(Number(form.floor)))
+    if (
+      form.floor === "" ||
+      Number(form.floor) < 0 ||
+      !Number.isInteger(Number(form.floor))
+    )
       errors.floor = "Ingresá un piso válido (0 o mayor).";
     if (!form.unitType.trim()) errors.unitType = "El tipo es obligatorio.";
     return errors;
@@ -55,12 +71,6 @@ export const UnitsModal = ({ building, show, onHide }) => {
       setForm(EMPTY_FORM);
       setFieldErrors({});
     } catch (err) {
-      // TODO(auth): quitar log de depuración
-      console.debug(
-        "[units] create error:",
-        err?.response?.status,
-        err?.response?.data ?? err?.message,
-      );
       const status = err?.response?.status;
       setServerError(
         apiErrorMessage(
@@ -77,7 +87,7 @@ export const UnitsModal = ({ building, show, onHide }) => {
     <Modal show={show} onHide={onHide} centered size="lg">
       <Modal.Header closeButton>
         <Modal.Title style={{ fontSize: "1.1rem" }}>
-          Unidades — {building.name}
+          Unidades -{building.name}
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
