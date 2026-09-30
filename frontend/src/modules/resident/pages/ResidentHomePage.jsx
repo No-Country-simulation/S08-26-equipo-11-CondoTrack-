@@ -113,10 +113,7 @@ export const ResidentHomePage = () => {
       {waitingDeliveries.length > 0 && (
         <div
           className="ct-card p-4 d-flex flex-column flex-sm-row align-items-sm-center gap-3 mb-4"
-          style={{
-            borderLeft: "3px solid var(--color-amber)",
-            background: "var(--color-amber-light)",
-          }}
+          style={{ background: "var(--color-amber-light)" }}
         >
           <div className="flex-grow-1">
             <p
