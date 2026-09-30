@@ -9,6 +9,9 @@ import {
   validateQr,
 } from "@/modules/access/services/accessService";
 import { QrScanner } from "@/modules/access/components/QrScanner";
+import { useActivityLog } from "@/core/activity/ActivityLogContext";
+import { ENTITY_TYPES, RESULTS } from "@/core/activity/activityTypes";
+import { useActorLabel } from "@/modules/auth/hooks/useActorLabel";
 import { apiErrorMessage } from "@/core/api/api";
 
 const formatDateTime = (value) => {
@@ -35,6 +38,8 @@ export const AccessPage = () => {
   const outlet = useOutletContext();
   const { user } = useAuth();
   const building = outlet?.building ?? user?.buildings?.[0] ?? null;
+  const { logActivity } = useActivityLog();
+  const actor = useActorLabel();
 
   const [qrToken, setQrToken] = useState("");
   const [validated, setValidated] = useState(null);
@@ -60,10 +65,32 @@ export const AccessPage = () => {
       setSuccessMessage(
         `Ingreso registrado: ${result.name || "visitante"} · Unidad ${result.unit?.code ?? "—"}.`,
       );
+      // El ingreso es el evento más crítico del edificio: sin esta traza no
+      // queda registro de quién autorizó el acceso ni de qué unidad.
+      logActivity({
+        actor,
+        action: `Validó el QR e hizo ingresar a ${result.name || "un visitante"}`,
+        buildingId: result.buildingId ?? building?.id ?? null,
+        unitId: result.unitId ?? null,
+        unitCode: result.unit?.code ?? null,
+        entityType: ENTITY_TYPES.ACCESS,
+        entityId: result.id ?? null,
+        result: RESULTS.OK,
+        detail: result.relation || null,
+      });
     } catch (err) {
-      setValidateError(
-        apiErrorMessage(err, "No se pudo validar el QR."),
-      );
+      const message = apiErrorMessage(err, "No se pudo validar el QR.");
+      setValidateError(message);
+      // Un QR rechazado también es trazabilidad: se necesita saber qué se
+      // intentó(validado, vencido o inexistente).
+      logActivity({
+        actor,
+        action: "Intentó validar un QR sin éxito",
+        buildingId: building?.id ?? null,
+        entityType: ENTITY_TYPES.ACCESS,
+        result: RESULTS.ERROR,
+        detail: message,
+      });
     } finally {
       setValidating(false);
     }
@@ -120,13 +147,32 @@ export const AccessPage = () => {
       setSuccessMessage(
         `Salida registrada: ${authorization.name || "visitante"}.`,
       );
+      logActivity({
+        actor,
+        action: `Registró la salida de ${authorization.name || "un visitante"}`,
+        buildingId: authorization.buildingId ?? building?.id ?? null,
+        unitId: authorization.unitId ?? null,
+        unitCode: authorization.unit || null,
+        entityType: ENTITY_TYPES.ACCESS,
+        entityId: authorization.id ?? null,
+        result: RESULTS.OK,
+      });
       if (query.trim()) {
         setResults(await searchVisits(query));
       }
     } catch (err) {
-      setExitError(
-        apiErrorMessage(err, "No se pudo registrar la salida."),
-      );
+      const message = apiErrorMessage(err, "No se pudo registrar la salida.");
+      setExitError(message);
+      logActivity({
+        actor,
+        action: `No pudo registrar la salida de ${authorization.name || "un visitante"}`,
+        buildingId: authorization.buildingId ?? building?.id ?? null,
+        unitId: authorization.unitId ?? null,
+        entityType: ENTITY_TYPES.ACCESS,
+        entityId: authorization.id ?? null,
+        result: RESULTS.ERROR,
+        detail: message,
+      });
     } finally {
       setExitingId(null);
     }
